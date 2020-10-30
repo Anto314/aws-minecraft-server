@@ -1,0 +1,269 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A simple Minecraft Server Solution
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: Project
+        Parameters: [Name,BucketName]
+      - Label: Network
+        Parameters: [CIDR,Az]
+      - Label: Server
+        Parameters: [BucketNameParameter, ServerInstanceType, Ami]
+      - Label: Source Code
+        Parameters: [Repository]
+      - Label: CodeBuild
+        Parameters: [ComputeType, Type, Image]
+
+    ParameterLabels:
+      CIDR:
+        default: "Which is the CIDR for this Solution ?"
+      Az:
+        default: "On which Az the subnet with lay on ?"
+      Name:
+        default: "Name of the Solution"
+      BucketName:
+        default: "Name of the Bucket"
+      BucketNameParameter:
+        default: "Name of the SSM Parameter that the instance will read"
+      ServerInstanceType:
+        default: "Instance Type of Server"
+      Ami:
+        default: "AMI to use to run with Instance"
+      Repository:
+        default: Repository Url
+Parameters:
+  CIDR:
+    Description: VPC Cidr
+    Type: String
+    Default: 10.24.0.0/28
+  Az:
+    Description: Subnet Availability Zone
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-west-1a
+  Name:
+    Description: Stack Name
+    Type: String
+    Default: minecraft-server
+  BucketName:
+    Description: Bucket Name
+    Type: String
+    Default: s3-anto-minecraft-server
+  BucketNameParameter:
+    Description: SSM Parameter where the bucket Name will be stored
+    Type: String
+    Default: /infra/s3/bucketName
+  ServerInstanceType:
+    Description: Instance Type for the Server
+    Type: String
+    Default: t4g.medium
+  Ami:
+    Description: AMI to Use for the Server
+    Type: String
+    Default: ami-036559f6f83de21be
+  Repository:
+    Description: Repository Url
+    Type: String
+    Default: "https://github.com/Anto314/aws-minecraft-server.git"
+
+  ComputeType: 
+    Description: Codebuild Compute Size
+    Type: String
+    Default: BUILD_GENERAL1_SMALL
+  Type: 
+    Description: Type of Container to be run for Build
+    Type: String
+    Default: LINUX_CONTAINER 
+  Image: 
+    Description: Docker Image to be used by Codebuild
+    Type: String
+    Default: aws/codebuild/standard:1.0
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref CIDR
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub vpc-${Name}
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref Az
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub sbn-${Name}
+  SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub sgec2-${Name}
+      GroupDescription: Protect Minecraft Server Access
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Access to All AWS Services
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+  s3Bucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      BucketName: !Ref BucketName
+
+  IamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub role-${Name}
+      Path: "/"
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+                - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub policy-s3-${Name}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action: ["s3:PutObject","s3:GetObject"]
+                  Resource: !GetAtt s3Bucket.Arn
+                - Effect: "Allow"
+                  Action: ["ssm:GetParameter"]
+                  Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${BucketNameParameter}
+  IamInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ip-${Name}
+      Path: /
+      Roles:
+        - !Ref IamRole
+  S3ParameterName:
+    Type: AWS::SSM::Parameter
+    Properties: 
+      Name: !Ref BucketNameParameter
+      Tier: Standard
+      Type: String
+      Value: !Ref BucketName
+  SnsTopicCloudFormation:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub sns-cf-${Name} 
+      TopicName: !Sub sns-cf-${Name}
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub lt-anto-${Name}
+      LaunchTemplateData:
+        IamInstanceProfile: 
+          Arn: !GetAtt IamInstanceProfile.Arn
+        ImageId: !Ref Ami
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: True
+            DeviceIndex: 0
+            Groups:
+              - !Ref SG
+  CodebuildIam:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub role-cb-anto-${Name}
+      Path: "/"
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+                - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub policy-cb-${Name}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action: ["logs:CreateLogStream","logs:PutLogEvents"]
+                  Resource: !GetAtt Logs.Arn 
+               
+  Logs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/cb-anto-${Name}"
+      RetentionInDays: 7
+
+  Codebuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Description: Codebuild Project to build Lambda Function for Minecraft Server
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER 
+        Image: aws/codebuild/standard:1.0
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+      Name: !Sub cb-anto-${Name}
+      ServiceRole: !GetAtt CodebuildIam.Arn
+      Source:
+        Auth:
+          Type: OAUTH
+        Type: GITHUB
+        Location: !Ref Repository
+      Triggers:
+        Webhook: True
+      
+  Autoscalling:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      AutoScalingGroupName: !Sub asg-anto-${Name}
+      AvailabilityZones: 
+        - !Ref Az
+      Cooldown: 5
+      DesiredCapacity: 0
+      HealthCheckGracePeriod: 30
+      MaxSize: 1
+      MinSize: 0
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateName: !Sub lt-anto-${Name}
+            Version: !GetAtt LaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref ServerInstanceType
+        InstancesDistribution:
+          OnDemandPercentageAboveBaseCapacity: 0
+          SpotAllocationStrategy: lowest-price
+      Tags: 
+        - Key: Name
+          Value: !Sub ec2-anto-${Name}
+          PropagateAtLaunch: True
+      TerminationPolicies: 
+        - OldestInstance
+      VPCZoneIdentifier: 
+        - !Ref Subnet
+  SpotInstanceTerminaisonEvent:
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: Detection of Spot Instance Terminaison
+      EventPattern: {
+        "source": 
+          ["aws.ec2"],
+          "detail-type": [
+            "EC2 Spot Instance Interruption Warning"
+            ]
+      }
