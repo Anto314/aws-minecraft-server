@@ -1,0 +1,340 @@
+Description: Lambda Automatic Deployment Pipeline
+Parameters:
+  LambdaName:
+    Type: String
+  LambdaDescription:
+    Type: String
+  DefaultSourceBucket:
+    Type: String
+    Default: s3-anto-lambda-artifactbucket
+Resources: 
+  builderrole: 
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub role-kyceu-lambda-build-${LambdaName} 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              Service: 
+                - "codebuild.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies: 
+        - PolicyName: "root"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - Fn::Join:
+                      -   "-"
+                      -   - "arn:aws:logs:eu-west-1:334073175487:log-group:/aws/codebuild/cbp-gp-d-ew1-kyceu-lambda" 
+                          - !Sub ${LambdaName}*
+                  - Fn::Join:
+                    -   "-"
+                    -   - "arn:aws:logs:eu-west-1:334073175487:log-group:/aws/codebuild/cbp-gp-d-ew1-kyceu-lambda"
+                        - !Sub ${LambdaName}/*
+                Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              - Effect: Allow
+                Resource:
+                  - !Join ["", [!ImportValue s3artifactsArn, "/*"]]
+                  - !ImportValue s3artifactsArn
+                Action:
+                  - s3:CreateBucket
+                  - s3:GetObject
+                  - s3:List*
+                  - s3:PutObject
+  pipelinerole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub role-kyceu-lambda-pipeline-${LambdaName}
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              Service: 
+                - "codepipeline.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies: 
+        - PolicyName: "root"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                - iam:PassRole
+                Resource: "*"
+                Effect: Allow
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                    - cloudformation.amazonaws.com
+                    - iam.amazonaws.com
+                    - lambda.amazonaws.com
+
+              - Action:
+                - codecommit:CancelUploadArchive
+                - codecommit:GetBranch
+                - codecommit:GetCommit
+                - codecommit:GetUploadArchiveStatus
+                - codecommit:UploadArchive
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - cloudwatch:*
+                - s3:*
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - lambda:InvokeFunction
+                - lambda:ListFunctions
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - cloudformation:CreateStack
+                - cloudformation:DeleteStack
+                - cloudformation:DescribeStacks
+                - cloudformation:UpdateStack
+                - cloudformation:CreateChangeSet
+                - cloudformation:DeleteChangeSet
+                - cloudformation:DescribeChangeSet
+                - cloudformation:ExecuteChangeSet
+                - cloudformation:SetStackPolicy
+                - cloudformation:ValidateTemplate
+                Resource: !Sub "arn:aws:cloudformation:eu-west-1:334073175487:stack/kyceu-lambda-gp-ew1-${LambdaName}/*"
+                Effect: Allow
+              - Action:
+                - codebuild:BatchGetBuilds
+                - codebuild:StartBuild
+                Resource:
+                  - !Sub "arn:aws:codebuild:eu-west-1:334073175487:project/cbp-gp-d-ew1-kyceu-lambda-${LambdaName}*"
+                  - !Sub "arn:aws:codebuild:eu-west-1:334073175487:project/cbp-gp-d-ew1-kyceu-lambda-${LambdaName}/*"
+                Effect: Allow
+              
+  cfrole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub role-kyceu-lambda-cf-${LambdaName} 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              Service: 
+                - "cloudformation.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies: 
+        - PolicyName: "root"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - iam:PassRole
+                Resource: "*"
+                Effect: Allow
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                    - cloudformation.amazonaws.com
+                    - iam.amazonaws.com
+                    - lambda.amazonaws.com
+              - Effect: Allow
+                Resource:
+                  - !Join ["", [!ImportValue s3artifactsArn, "/*"]]
+                  - !ImportValue s3artifactsArn
+                Action:
+                  - s3:CreateBucket
+                  - s3:GetObject
+                  - s3:List*
+                  - s3:PutObject
+              - Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
+                Resource: !Sub "arn:aws:cloudformation:eu-west-1:334073175487:stack/kyceu-lambda-gp-ew1-${LambdaName}/*"
+                Effect: Allow
+              - Action:
+                - lambda:*
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                Resource: "*"
+                Effect: Allow
+
+  repository:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryDescription: !Ref LambdaDescription
+      RepositoryName: !Sub cc-kyceu-lambda-${LambdaName}
+
+  builder:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        EncryptionDisabled: true
+        Type: CODEPIPELINE
+        OverrideArtifactName: true
+      Description: !Ref LambdaDescription
+      Environment:
+        Image: aws/codebuild/python:3.6.5
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: LambdaName
+            Type: PLAINTEXT
+            Value: !Ref LambdaName
+          - Name: LambdaDescription
+            Type: PLAINTEXT
+            Value: !Ref LambdaDescription
+      Name: !Sub cbp-gp-d-ew1-kyceu-lambda-${LambdaName}
+      ServiceRole: !Ref builderrole
+      Source:
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 5
+  pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: s3-gemalto-kyceu-d-ew1-lambda-artifacts
+      Name: !Sub cp-kyceu-lambda-${LambdaName}
+      RestartExecutionOnUpdate: true
+      RoleArn: !GetAtt pipelinerole.Arn
+      Stages:      
+        - Name: Source
+          Actions:
+          - InputArtifacts: []
+            Name: Source
+            ActionTypeId:
+              Category: Source
+              Owner: AWS
+              Version: '1'
+              Provider: CodeCommit
+            OutputArtifacts:
+            - Name: !Sub sourceCode
+            Configuration:
+              RepositoryName: !Sub cc-kyceu-lambda-${LambdaName}
+              BranchName: master
+              PollForSourceChanges: false
+            RunOrder: 1
+        - Name: Build
+          Actions:
+          - InputArtifacts:
+              - Name: !Sub sourceCode
+            Name: Build
+            ActionTypeId:
+              Category: Build
+              Owner: AWS
+              Provider: CodeBuild
+              Version: "1"
+            OutputArtifacts:
+              - Name: !Sub lambdaCode
+              - Name: !Sub cloudformation
+            Configuration:
+              ProjectName: !Sub cbp-gp-d-ew1-kyceu-lambda-${LambdaName}
+            RunOrder: 1
+        - Name: Deploy
+          Actions:
+          - InputArtifacts:
+              - Name: !Sub lambdaCode
+              - Name: !Sub cloudformation
+            Name: Deploy
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Provider: CloudFormation
+              Version: "1"
+            Configuration:
+              ActionMode: CREATE_UPDATE
+              Capabilities: CAPABILITY_IAM
+              RoleArn: !GetAtt cfrole.Arn
+              StackName: !Join ["-", ["kyceu", 'lambda', "gp", "ew1", !Ref LambdaName]] 
+              TemplateConfiguration: !Join ["::", ["cloudformation","templateParameters.json"]]
+              TemplatePath: !Join ["::", ["cloudformation","templateLambda.yaml"]]
+            RunOrder: 1
+  AmazonCloudWatchEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Join:
+              - "-"
+              - - "role-kyceu-execution"
+                - !Sub cp-kyceu-lambda-${LambdaName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName:
+            Fn::Join:
+              - "-"
+              - - "policy-kyceu-execution"
+                - !Sub cp-kyceu-lambda-${LambdaName}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Effect: Allow
+                Action: codepipeline:StartPipelineExecution
+                Resource: !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref pipeline ] ] 
+
+  AmazonCloudWatchEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "event-kyceu-lambda-${LambdaName}"
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - 'CodeCommit Repository State Change'
+        resources:
+          - !GetAtt repository.Arn
+        detail:
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - branch
+          referenceName:
+            - master
+      Targets:
+        - Arn:
+            Fn::Join:
+              -   ""
+              -   - 'arn:aws:codepipeline:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':'
+                  - !Sub cp-kyceu-lambda-${LambdaName}
+          RoleArn: !GetAtt AmazonCloudWatchEventRole.Arn
+          Id: !Sub cp-kyceu-lambda-${LambdaName}

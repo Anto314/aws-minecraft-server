@@ -1,0 +1,22 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - printenv
+      - pip install ansible
+      - ansible-playbook ./dependencies/playbook.yaml
+      - ansible-playbook ./cf/playbook.yaml
+      - cp -r src/. .
+      - cp -r ./dependencies/. .
+artifacts:
+  name: test
+  secondary-artifacts:
+    lambdaCode:
+      files:
+        - '**/*'
+      name: lambdaCode
+    cloudformation:
+      files:
+        - cf/*
+      name: cloudformation
+      discard-paths: yes
