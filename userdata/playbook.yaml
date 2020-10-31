@@ -1,0 +1,30 @@
+---
+hosts: localhost
+tasks:
+  - name: Loading Configuration File
+    include_vars:
+      file: conf.yaml
+  - name: Install Java
+    package:
+      name: "java-{{java_version}}"
+  - name: Create Folder
+    file:
+      state: directory
+      path: "{{minecraft.installation_path}}"
+      recurse: yes
+  - name: Download foo.conf
+    get_url:
+      url: "{{fabric_url}}"
+      dest: /tmp/fabric.jar
+      mode: '0755'
+  - name: Copy Configuration File
+    copy:
+      src: "{{item}}"
+      dest: "{{minecraft.installation_path}}/{{item}}"
+    with_items:
+      - eula.txt
+      - server.properties
+      
+  - name: Run Fabric Installation
+    shell: "java -jar fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
+

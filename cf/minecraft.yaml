@@ -97,6 +97,37 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub sbn-${Name}
+  SubnetRouteTableAttachment:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref RoutingTable
+      SubnetId: !Ref Subnet
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub igw-anto-${Name}
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+      
+  RoutingTable:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      Tags: 
+        - Key: Name 
+          Value: !Sub rtb-anto-${Name}
+      VpcId: !Ref Vpc
+
+  InternetAccessRoute:
+    Type: AWS::EC2::Route
+    Properties:
+       RouteTableId: !Ref RoutingTable
+       DestinationCidrBlock: 0.0.0.0/0
+       GatewayId: !Ref InternetGateway
   SG:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -117,7 +148,6 @@ Resources:
     Type: AWS::S3::Bucket
     Properties: 
       BucketName: !Ref BucketName
-
   IamRole:
     Type: AWS::IAM::Role
     Properties:
@@ -132,17 +162,37 @@ Resources:
                 - ec2.amazonaws.com
             Action:
                 - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
         - PolicyName: !Sub policy-s3-${Name}
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
-                  Action: ["s3:PutObject","s3:GetObject"]
+                  Action:
+                    - s3:PutObject
+                    - s3:GetObject
                   Resource: !GetAtt s3Bucket.Arn
                 - Effect: "Allow"
-                  Action: ["ssm:GetParameter"]
+                  Action:
+                  - ssm:GetParameter
                   Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${BucketNameParameter}
+
+                - Effect: Allow
+                  Action:
+                    - ssmmessages:CreateControlChannel
+                    - ssmmessages:CreateDataChannel
+                    - ssmmessages:OpenControlChannel
+                    - ssmmessages:OpenDataChannel
+                  Resource: "*"
+
+                - Effect: Allow
+                  Action:
+                    - s3:GetEncryptionConfiguration
+                  Resource: "*"
+
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -208,7 +258,14 @@ Resources:
     Type: AWS::CodeBuild::Project
     Properties:
       Artifacts:
-        Type: NO_ARTIFACTS
+        ArtifactIdentifier: userdata
+        Location: !Ref BucketName
+        Name: userdata.zip
+        NamespaceType: None
+        OverrideArtifactName: Boolean
+        Packaging: ZIP
+        Path: /
+        Type: S3
       Description: Codebuild Project to build Lambda Function for Minecraft Server
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
@@ -256,6 +313,29 @@ Resources:
         - OldestInstance
       VPCZoneIdentifier: 
         - !Ref Subnet
+
+  CustomLifeCycleHook:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties: 
+      AutoScalingGroupName: !Sub asg-anto-${Name}
+      DefaultResult: CONTINUE
+      LifecycleHookName: my-lifecycle
+      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+      HeartbeatTimeout: 30
+
+  SpotInstanceTerminaisonAutoscalling:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Detection of Spot Instance Terminaison by ASG
+      EventPattern: {
+      "source": [
+        "aws.autoscaling"
+      ],
+      "detail-type": [
+        "EC2 Instance-terminate Lifecycle Action"
+      ]
+    }
+
   SpotInstanceTerminaisonEvent:
     Type: AWS::Events::Rule
     Properties: 
