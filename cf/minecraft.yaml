@@ -247,6 +247,9 @@ Resources:
                 - Effect: "Allow"
                   Action: ["logs:CreateLogStream","logs:PutLogEvents"]
                   Resource: !GetAtt Logs.Arn 
+                - Effect: "Allow"
+                  Action: ["s3:GetObject", "s3:PutObeject"]
+                  Resource: !Ref s3Bucket
                
   Logs:
     Type: AWS::Logs::LogGroup
@@ -261,8 +264,7 @@ Resources:
         ArtifactIdentifier: userdata
         Location: !Ref BucketName
         Name: userdata.zip
-        NamespaceType: None
-        OverrideArtifactName: Boolean
+        NamespaceType: NONE
         Packaging: ZIP
         Path: /
         Type: S3
