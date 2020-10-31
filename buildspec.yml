@@ -6,9 +6,6 @@ phases:
       - printenv
       - echo "End Build"
 artifacts:
-  name: test
-  secondary-artifacts:
-    userdata:
-      files:
-        - "userdata/*"
-      name: userdata
+  name: userdata
+  files:
+    - "userdata/*"
