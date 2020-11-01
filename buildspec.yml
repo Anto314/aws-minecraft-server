@@ -5,10 +5,10 @@ phases:
       - yum install gcc git -y
       - echo "Download mcron source code"
       - git clone https://github.com/Tiiffi/mcrcon.git
-      - cd mcron
+      - cd mcrcon
       - make
       - cd - 
-      - cp mcron/mcron /userdata/files/mcron
+      - cp mcrcon/mcrcon /userdata/files/mcron
 artifacts:
   files:
     - "userdata/**/*"

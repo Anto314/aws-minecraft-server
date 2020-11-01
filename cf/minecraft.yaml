@@ -284,6 +284,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER 
         Image: !Ref Image
+        PrivilegedMode: True 
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
