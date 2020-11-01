@@ -5,6 +5,8 @@ phases:
       - echo "Start Build"
       - printenv
       - echo "End Build"
+      - yum install gcc -y
+      - make bulid
 artifacts:
   files:
     - "userdata/**/*"

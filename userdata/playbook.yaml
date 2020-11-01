@@ -15,7 +15,7 @@
     - name: Download foo.conf
       get_url:
         url: "{{fabric_url}}"
-        dest: /tmp/fabric.jar
+        dest: ./fabric.jar
         mode: '0755'
     - name: Copy Configuration File
       copy:
@@ -26,4 +26,4 @@
         - server.properties
 
     - name: Run Fabric Installation
-      shell: "java -jar fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
+      shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
