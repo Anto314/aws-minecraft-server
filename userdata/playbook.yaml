@@ -28,13 +28,19 @@
       with_items:
         - eula.txt
         - server.properties
-        
+
     - name: Install Mcrcon
       copy:
         src: mcrcon
         path: /usr/bin/mcrcon
         mode: 0755 
-
+    - name: Install Scripts
+      copy:
+        src: "{{item}}"
+        dest: "{{minecraft.installation_path}}"
+        mode: 0755
+      with_items:
+        - stopServer.sh    
     - name: Run Fabric Installation
       shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
 

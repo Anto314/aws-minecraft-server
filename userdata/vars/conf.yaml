@@ -4,3 +4,6 @@ fabric_url: "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.6.1.51/f
 minecraft:
   installation_path: "/opt/minecraft"
   version: 1.16.1
+  java:
+    xms: 2G
+    xmx: 3G
