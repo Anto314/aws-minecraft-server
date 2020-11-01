@@ -2,11 +2,13 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Start Build"
-      - printenv
-      - echo "End Build"
-      - yum install gcc -y
-      - make bulid
+      - yum install gcc git -y
+      - echo "Download mcron source code"
+      - git clone https://github.com/Tiiffi/mcrcon.git
+      - cd mcron
+      - make
+      - cd - 
+      - cp mcron/mcron /userdata/files/mcron
 artifacts:
   files:
     - "userdata/**/*"

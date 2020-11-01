@@ -77,7 +77,7 @@ Parameters:
   Image: 
     Description: Docker Image to be used by Codebuild
     Type: String
-    Default: aws/codebuild/standard:1.0
+    Default: aws/codebuild/amazonlinux2-aarch64-standard:3.0
 
 Resources:
   Vpc:
@@ -283,7 +283,7 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER 
-        Image: aws/codebuild/amazonlinux2-aarch64-standard:1.0
+        Image: !Ref Image
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
