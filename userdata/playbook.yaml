@@ -12,7 +12,7 @@
         state: directory
         path: "{{minecraft.installation_path}}"
         recurse: yes
-    - name: Download foo.conf
+    - name: Fabric
       get_url:
         url: "{{fabric_url}}"
         dest: ./fabric.jar
@@ -24,6 +24,10 @@
       with_items:
         - eula.txt
         - server.properties
-
+    - name: Install Mcrcon
+      copy:
+        src: mcrcon
+        path: /usr/bin/mcrcon
+        mode: 0755 
     - name: Run Fabric Installation
       shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
