@@ -77,7 +77,7 @@ Parameters:
   Image: 
     Description: Docker Image to be used by Codebuild
     Type: String
-    Default: aws/codebuild/amazonlinux2-aarch64-standard:3.0
+    Default: aws/codebuild/amazonlinux2-aarch64-standard:2.0
 
 Resources:
   Vpc:
