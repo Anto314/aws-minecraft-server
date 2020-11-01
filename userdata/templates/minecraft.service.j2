@@ -1,0 +1,9 @@
+[Unit]
+Description=Minecraft Server
+
+[Service]
+WorkingDirectory={{minecraft.installation_path}}
+Restart=always
+ExecStart=/usr/bin/java -jar {{minecraft.installation_path}}/fabric-server-launch.jar nogui
+[Install]
+WantedBy=multi-user.target

@@ -6,7 +6,11 @@
         file: conf.yaml
     - name: Install Java
       package:
-        name: "java-{{java_version}}"
+        name: "{{item}}"
+      with_items:
+        - "java-{{java_version}}"
+        - tmux
+        - htop
     - name: Create Folder
       file:
         state: directory
@@ -24,10 +28,21 @@
       with_items:
         - eula.txt
         - server.properties
+        
     - name: Install Mcrcon
       copy:
         src: mcrcon
         path: /usr/bin/mcrcon
         mode: 0755 
+
     - name: Run Fabric Installation
       shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
+
+    - name: Generate the systemd service specification
+      templates:
+        src: minecraft.service.j2
+        dest: /etc/systemd/system/minecraft.service
+    - name: Start the Service
+        systemd:
+          name: minecraft
+          state: started
