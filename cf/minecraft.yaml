@@ -174,7 +174,9 @@ Resources:
                   Action:
                     - s3:PutObject
                     - s3:GetObject
-                  Resource: !GetAtt s3Bucket.Arn
+                    - s3:HeadObject
+                    - s3:ListBucket
+                  Resource: !Sub ${s3Bucket.Arn}*
                 - Effect: "Allow"
                   Action:
                   - ssm:GetParameter
@@ -225,6 +227,14 @@ Resources:
             DeviceIndex: 0
             Groups:
               - !Ref SG
+        UserData:
+          Fn::Base64: !Sub |
+            #! /bin/bash
+            aws s3 cp s3://${BucketName}/userdata.zip /tmp/userdata.zip
+            yum install unzip -y
+            amazon-linux-extras install ansible2 -y
+            unzip /tmp/userdata.zip -d /tmp/ -o
+            cd /tmp/userdata && ansible-playbook playbook.yaml
   CodebuildIam:
     Type: AWS::IAM::Role
     Properties:
@@ -248,8 +258,8 @@ Resources:
                   Action: ["logs:CreateLogStream","logs:PutLogEvents"]
                   Resource: !GetAtt Logs.Arn 
                 - Effect: "Allow"
-                  Action: ["s3:GetObject", "s3:PutObeject"]
-                  Resource: !Ref s3Bucket
+                  Action: "s3:*"
+                  Resource: "*"
                
   Logs:
     Type: AWS::Logs::LogGroup
@@ -268,11 +278,12 @@ Resources:
         Packaging: ZIP
         Path: /
         Type: S3
+        EncryptionDisabled: True
       Description: Codebuild Project to build Lambda Function for Minecraft Server
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER 
-        Image: aws/codebuild/standard:1.0
+        Image: aws/codebuild/amazonlinux2-aarch64-standard:1.0
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
