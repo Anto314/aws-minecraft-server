@@ -22,17 +22,22 @@ mc_waiting(){
 }
 
 mc_stop_server() {
+        INSTALL_PATH="$1"
+        BUCKET_NAME="$2"
         mc_say "Stopping the Server"
         mc_command "save-all"
         mc_command "stop"
+        aws s3 cp "$INSTALL_PATH/" s3://$BUCKET_NAME/ --recursive
 }
 
 main(){
         TOTAL_TIME=$1
         PERIOD=$2
+        INSTALL_PATH="$3"
+        BUCKET_NAME="$4"
         mc_waiting "$TOTAL_TIME" "$PERIOD"
-        mc_stop_server
+        mc_stop_server "$INSTALL_PATH" "$BUCKET_NAME"
 }
 
 # Calling Main
-main $1 $2 $3
+main $1 $2 $3 $4
