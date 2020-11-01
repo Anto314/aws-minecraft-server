@@ -32,8 +32,9 @@
     - name: Install Mcrcon
       copy:
         src: mcrcon
-        path: /usr/bin/mcrcon
+        dest: /usr/bin/mcrcon
         mode: 0755 
+        
     - name: Install Scripts
       copy:
         src: "{{item}}"
