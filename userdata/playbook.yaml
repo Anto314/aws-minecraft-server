@@ -49,6 +49,6 @@
         src: minecraft.service.j2
         dest: /etc/systemd/system/minecraft.service
     - name: Start the Service
-        systemd:
-          name: minecraft
-          state: started
+      systemd:
+        name: minecraft
+        state: started
