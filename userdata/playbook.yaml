@@ -11,6 +11,7 @@
         - "java-{{java_version}}"
         - tmux
         - htop
+        - awscli
     - name: Create Folder
       file:
         state: directory
@@ -38,15 +39,15 @@
       copy:
         src: mcrcon
         dest: /usr/bin/mcrcon
-        mode: 0755 
-        
+        mode: 0755
+
     - name: Install Scripts
       copy:
         src: "{{item}}"
         dest: "{{minecraft.installation_path}}"
         mode: 0755
       with_items:
-        - stopServer.sh    
+        - stopServer.sh
 
     - name: Run Fabric Installation
       shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
@@ -54,19 +55,19 @@
     - name: Retrieve Previous Minecraft Server State
       block:
         - name: Get World Backup
-          s3:
+          amazon.aws.aws_s3:
             bucket: s3-anto-minecraft-server
             object: world.zip
-            dest: "{{minecraft.installation_path}}"
+            dest: "{{minecraft.installation_path}}/world.zip"
             mode: get
         - name: Unzip the world
-          archive:
+          unarchive:
             src: "{{minecraft.installation_path}}/world.zip"
             dest: "{{minecraft.installation_path}}"
       rescue:
         - name: No Previous Minecraft Server State
           ansible.builtin.debug:
-            msg: "There is no world, let minecraft to create one"    
+            msg: "There is no world, let minecraft to create one"
 
     - name: Generate the systemd service specification
       template:
