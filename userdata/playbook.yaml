@@ -21,6 +21,7 @@
         url: "{{fabric_url}}"
         dest: ./fabric.jar
         mode: '0755'
+
     - name: Copy Configuration File
       copy:
         src: "{{item}}"
@@ -28,7 +29,11 @@
       with_items:
         - eula.txt
         - server.properties
-
+        - minecraft_lib.sh
+    - name: Generate Environment File
+      template:
+        src: minecraft.env.j2
+        dest: "{{minecraft.installation_path}}/minecraft.env"
     - name: Install Mcrcon
       copy:
         src: mcrcon
@@ -42,6 +47,7 @@
         mode: 0755
       with_items:
         - stopServer.sh    
+
     - name: Run Fabric Installation
       shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
 
@@ -66,7 +72,7 @@
       template:
         src: minecraft.service.j2
         dest: /etc/systemd/system/minecraft.service
-        
+
     - name: Start the Service
       systemd:
         name: minecraft
