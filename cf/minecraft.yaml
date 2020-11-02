@@ -233,7 +233,7 @@ Resources:
             aws s3 cp s3://${BucketName}/userdata.zip /tmp/userdata.zip
             yum install unzip -y
             amazon-linux-extras install ansible2 -y
-            unzip /tmp/userdata.zip -d /tmp/ -o
+            unzip -o /tmp/userdata.zip -d /tmp/
             cd /tmp/userdata && ansible-playbook playbook.yaml
   CodebuildIam:
     Type: AWS::IAM::Role
