@@ -45,10 +45,28 @@
     - name: Run Fabric Installation
       shell: "java -jar ./fabric.jar server -dir {{minecraft.installation_path}} -mcversion {{minecraft.version}} -downloadMinecraft"
 
+    - name: Retrieve Previous Minecraft Server State
+      block:
+        - name: Get World Backup
+          s3:
+            bucket: s3-anto-minecraft-server
+            object: world.zip
+            dest: "{{minecraft.installation_path}}"
+            mode: get
+        - name: Unzip the world
+          archive:
+            src: "{{minecraft.installation_path}}/world.zip"
+            dest: "{{minecraft.installation_path}}"
+      rescue:
+        - name: No Previous Minecraft Server State
+          ansible.builtin.debug:
+            msg: "There is no world, let minecraft to create one"    
+
     - name: Generate the systemd service specification
       template:
         src: minecraft.service.j2
         dest: /etc/systemd/system/minecraft.service
+        
     - name: Start the Service
       systemd:
         name: minecraft
