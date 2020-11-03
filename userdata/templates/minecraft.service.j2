@@ -5,6 +5,6 @@ Description=Minecraft Server
 WorkingDirectory={{minecraft.installation_path}}
 Restart=always
 ExecStart=/usr/bin/java -Xms{{minecraft.java.xms}} -Xmx{{minecraft.java.xmx}} -XX:+UseG1GC -jar {{minecraft.installation_path}}/fabric-server-launch.jar nogui
-ExecStop=/tmp/userdata/stopServer.sh
+ExecStop={{minecraft.installation_path}}/stopServer.sh
 [Install]
 WantedBy=multi-user.target
