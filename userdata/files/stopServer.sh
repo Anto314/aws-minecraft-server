@@ -8,4 +8,4 @@ main(){
 }
 
 # Calling Main
-main $1 $2
+main
