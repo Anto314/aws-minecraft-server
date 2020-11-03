@@ -230,14 +230,13 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #! /bin/bash
-            aws s3 cp s3://${BucketName}/userdata.zip /tmp/userdata.zip
             yum install unzip -y
             amazon-linux-extras install ansible2 -y
-            unzip -o /tmp/userdata.zip -d /tmp/
             yum install pip -y
             pip install botocore boto3 
-            ansible-galaxy collection install amazon.aws 
-            cd /tmp/userdata && ansible-playbook playbook.yaml
+            ansible-galaxy collection install amazon.aws
+            git clone https://github.com/Anto314/aws-minecraft-server.git 
+            cd aws-minecraft-server/userdata && ansible-playbook playbook.yaml
   # CodebuildIam:
   #   Type: AWS::IAM::Role
   #   Properties:
