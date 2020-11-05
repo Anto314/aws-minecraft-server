@@ -194,6 +194,14 @@ Resources:
                   Action:
                     - s3:GetEncryptionConfiguration
                   Resource: "*"
+                
+                - Effect: Allow
+                  Action: "sns:Publish"
+                  Resource: !Ref SnsTopicCloudFormation
+                  
+                - Effect: Allow
+                  Action: "sns:ListTopics"
+                  Resource: "*"
 
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
