@@ -197,7 +197,7 @@ Resources:
                 
                 - Effect: Allow
                   Action: "sns:Publish"
-                  Resource: !Ref SnsTopicCloudFormation
+                  Resource: !Ref SnsTopic
 
                 - Effect: Allow
                   Action: "sns:ListTopics"
