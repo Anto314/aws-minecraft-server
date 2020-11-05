@@ -73,3 +73,23 @@
       systemd:
         name: minecraft
         state: started
+
+    - name: Wait That server is ready for players
+      block:
+        - name: Wait the server to start and load the map
+          wait_for:
+            path: "{{minecraft.installation_path}}/logs/latest.log"
+            search_regex: "Done"
+        - name: Get Public IP of Server
+          uri:
+            url: http://169.254.169.254/latest/meta-data/public-ipv4
+            method: GET
+            status_code: [200, 202]
+            return_content: true
+          register: public_ip
+        - name: Notify users that the server is ready
+          community.aws.sns:
+            msg: "{{lookup('template', 'sns.success.j2')}}"
+            subject: Server Minecraft est pret!
+            topic: sns-cf-minecraft-server
+            region: eu-west-1
