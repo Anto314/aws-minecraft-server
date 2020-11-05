@@ -35,11 +35,6 @@
       template:
         src: minecraft.env.j2
         dest: "{{minecraft.installation_path}}/minecraft.env"
-    - name: Install Mcrcon
-      copy:
-        src: mcrcon
-        dest: /usr/bin/mcrcon
-        mode: 0755
 
     - name: Install Scripts
       copy:
