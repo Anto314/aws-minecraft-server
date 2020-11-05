@@ -198,7 +198,7 @@ Resources:
                 - Effect: Allow
                   Action: "sns:Publish"
                   Resource: !Ref SnsTopicCloudFormation
-                  
+
                 - Effect: Allow
                   Action: "sns:ListTopics"
                   Resource: "*"
@@ -217,7 +217,14 @@ Resources:
       Tier: Standard
       Type: String
       Value: !Ref BucketName
-  SnsTopicCloudFormation:
+  SNSParameterName:
+    Type: AWS::SSM::Parameter
+    Properties: 
+      Name: /infra/sns/topicName
+      Tier: Standard
+      Type: String
+      Value: !GetAtt SnsTopic.TopicName
+  SnsTopic:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Sub sns-cf-${Name} 
