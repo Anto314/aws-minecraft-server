@@ -58,7 +58,7 @@
         - name: Unzip the world
           unarchive:
             src: "{{minecraft.installation_path}}/world.zip"
-            dest: "{{minecraft.installation_path}}"
+            dest: "/"
       rescue:
         - name: No Previous Minecraft Server State
           ansible.builtin.debug:
