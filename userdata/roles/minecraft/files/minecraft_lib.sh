@@ -19,7 +19,7 @@ mc_waiting(){
 }
 
 mc_stop_server() {
-        ARCHIVE_NAME="$INSTALL_PATH/world.zip"
+        ARCHIVE_NAME="save.$FLAVOR.zip"
         mc_say "Stopping the Server"
         sleep "$PERIOD"
         
@@ -35,6 +35,6 @@ mc_stop_server() {
         mc_command "stop"
         sleep "$PERIOD"
         
-        zip -r "$ARCHIVE_NAME" "$INSTALL_PATH/world/"
-        aws s3 cp "$ARCHIVE_NAME" s3://$BUCKET_NAME/world.zip
+        zip -r "/tmp/$ARCHIVE_NAME" "$INSTALL_PATH"
+        aws s3 cp "/tmp/$ARCHIVE_NAME" s3://$BUCKET_NAME/$ARCHIVE_NAME
 }
