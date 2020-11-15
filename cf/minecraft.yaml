@@ -227,8 +227,8 @@ Resources:
   SnsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: !Sub sns-cf-${Name} 
-      TopicName: !Sub sns-cf-${Name}
+      DisplayName: !Sub sns-cf-anto-${Name} 
+      TopicName: !Sub sns-cf-anto-${Name}
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
@@ -250,6 +250,7 @@ Resources:
             yum install python-pip -y
             pip install botocore boto3
             ansible-galaxy collection install amazon.aws
+            ansible-galaxy collection install community.aws
             git clone https://github.com/Anto314/aws-minecraft-server.git --recursive
             cd aws-minecraft-server/
             cd mcrcon

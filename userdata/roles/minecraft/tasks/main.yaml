@@ -89,5 +89,5 @@
       community.aws.sns:
         msg: "{{lookup('template', 'sns.success.j2')}}"
         subject: Server Minecraft est pret!
-        topic: sns-cf-minecraft-server
+        topic: sns-cf-anto-minecraft-server
       region: eu-west-1
