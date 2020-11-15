@@ -1,5 +1,5 @@
 ---
-- name: Install Java
+- name: Install Packages
   package:
     name: "{{item}}"
   with_items:
@@ -7,15 +7,19 @@
     - tmux
     - htop
     - awscli
+
+
 - name: Create Folder
   file:
     state: directory
     path: "{{minecraft.installation_path}}"
     recurse: yes
+
 - name: Copy Configuration File
   copy:
     src: "{{item}}"
     dest: "{{minecraft.installation_path}}/{{item}}"
+
   with_items:
     - eula.txt
     - server.properties
@@ -37,26 +41,28 @@
 - name: Get the Installer for Chosen Flavor
   get_url:
     url: "{{installers[minecraft.flavor].url}}"
-    dest: ./installer.jar
+    dest: installer.jar
     mode: '0755'
 
-- name: Run Fabric Installation
-  shell: "{{installers[minecraft.flavor].install_cmd"
-  chdir: "{{minecraft.installation_path}}"
+- name: Run Minecraft Server Installation
+  shell: 
+    cmd: "{{installers[minecraft.flavor].install_cmd}}"
+    chdir: "{{minecraft.installation_path}}"
 
 - name: Retrieve Previous Minecraft Server State
   block:
     - name: Get World Backup
       amazon.aws.aws_s3:
         bucket: s3-anto-minecraft-server
-        object: "world.{{minecraft.flavor}}.zip"
-        dest: "{{minecraft.installation_path}}/world.{{minecraft.flavor}}.zip"
+        object: "save.{{minecraft.flavor}}.zip"
+        dest: "{{minecraft.installation_path}}/save.zip"
         mode: get
 
     - name: Unzip the world
       unarchive:
-        src: "{{minecraft.installation_path}}/world.{{minecraft.flavor}}.zip"
+        src: "{{minecraft.installation_path}}/save.zip"
         dest: "/"
+
   rescue:
     - name: No Previous Minecraft Server State
       ansible.builtin.debug:
@@ -78,6 +84,7 @@
       wait_for:
         path: "{{minecraft.installation_path}}/logs/latest.log"
         search_regex: "Done"
+
     - name: Get Public IP of Server
       uri:
         url: http://169.254.169.254/latest/meta-data/public-ipv4
@@ -85,9 +92,10 @@
         status_code: [200, 202]
         return_content: true
       register: public_ip
+
     - name: Notify users that the server is ready
       community.aws.sns:
         msg: "{{lookup('template', 'sns.success.j2')}}"
         subject: Server Minecraft est pret!
         topic: sns-cf-anto-minecraft-server
-      region: eu-west-1
+        region: eu-west-1
