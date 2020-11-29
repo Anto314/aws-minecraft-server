@@ -35,4 +35,5 @@ mc_stop_server() {
         mc_command "stop"
         sleep "$PERIOD"
         
+        umount "$INSTALL_PATH"
 }
