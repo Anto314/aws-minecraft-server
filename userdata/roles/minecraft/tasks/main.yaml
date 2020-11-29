@@ -11,7 +11,7 @@
     - tmux
     - htop
     - awscli
-    - s3fs
+    - s3fs-fuse
 
 
 - name: Create Folder
