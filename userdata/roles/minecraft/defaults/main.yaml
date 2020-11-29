@@ -1,9 +1,9 @@
 installers:
   vanilla:
     url: "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.6.1.51/fabric-installer-0.6.1.51.jar"
-    install_cmd: "java -jar /tmp/installer.jar server -mcversion {{minecraft.version}} -downloadMinecraft"
+    install_cmd: "java -jar {{minecraft.installation_path}}/installer.jar server -mcversion {{minecraft.version}} -downloadMinecraft"
     jar_cmd: "fabric-server-launch.jar nogui"
   modded:
     url: "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.12.2-14.23.5.2831/forge-1.12.2-14.23.5.2831-installer.jar"
-    install_cmd: "java -jar/tmp/installer.jar --installServer"
+    install_cmd: "java -jar {{minecraft.installation_path}}/installer.jar --installServer"
     jar_cmd: "forge-1.12.2-14.23.5.2831-universal.jar nogui"

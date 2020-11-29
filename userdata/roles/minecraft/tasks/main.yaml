@@ -13,7 +13,6 @@
     - awscli
     - s3fs-fuse
 
-
 - name: Create Folder
   file:
     state: directory
@@ -49,7 +48,7 @@
 - name: Get the Installer for Chosen Flavor
   get_url:
     url: "{{installers[minecraft.flavor].url}}"
-    dest: installer.jar
+    dest: "{{minecraft.installation_path}}/installer.jar"
     mode: '0755'
 
 - name: Run Minecraft Server Installation
