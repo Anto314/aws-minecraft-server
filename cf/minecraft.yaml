@@ -149,6 +149,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties: 
       BucketName: !Ref BucketName
+      AccessControl: Private
   IamRole:
     Type: AWS::IAM::Role
     Properties:
