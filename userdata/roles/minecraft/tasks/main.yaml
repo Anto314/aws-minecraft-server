@@ -1,4 +1,8 @@
 ---
+- name: Enable Epel Repos
+  shell: amazon-linux-extras install epel
+  become: yes
+
 - name: Install Packages
   package:
     name: "{{item}}"
@@ -7,6 +11,7 @@
     - tmux
     - htop
     - awscli
+    - s3fs
 
 
 - name: Create Folder
@@ -30,6 +35,9 @@
     src: minecraft.env.j2
     dest: "{{minecraft.installation_path}}/minecraft.env"
 
+- name: Mount s3 as File System
+  shell: 's3fs s3-anto-minecraft-server -o use_cache=/tmp,iam_role=role-minecraft-server,allow_other {{minecraft.installation_path}} -o url="https://s3-eu-west-1.amazonaws.com" -o nonempty'
+
 - name: Install Scripts
   copy:
     src: "{{item}}"
@@ -48,25 +56,6 @@
   shell: 
     cmd: "{{installers[minecraft.flavor].install_cmd}}"
     chdir: "{{minecraft.installation_path}}"
-
-- name: Retrieve Previous Minecraft Server State
-  block:
-    - name: Get World Backup
-      amazon.aws.aws_s3:
-        bucket: s3-anto-minecraft-server
-        object: "save.{{minecraft.flavor}}.zip"
-        dest: "{{minecraft.installation_path}}/save.zip"
-        mode: get
-
-    - name: Unzip the world
-      unarchive:
-        src: "{{minecraft.installation_path}}/save.zip"
-        dest: "/"
-
-  rescue:
-    - name: No Previous Minecraft Server State
-      ansible.builtin.debug:
-        msg: "There is no world, let minecraft to create one"
 
 - name: Generate the systemd service specification
   template:

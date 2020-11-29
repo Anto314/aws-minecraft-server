@@ -35,6 +35,4 @@ mc_stop_server() {
         mc_command "stop"
         sleep "$PERIOD"
         
-        zip -r "/tmp/$ARCHIVE_NAME" "$INSTALL_PATH"
-        aws s3 cp "/tmp/$ARCHIVE_NAME" s3://$BUCKET_NAME/$ARCHIVE_NAME
 }
