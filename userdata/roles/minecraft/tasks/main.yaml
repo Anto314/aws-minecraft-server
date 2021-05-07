@@ -34,17 +34,6 @@
     src: minecraft.env.j2
     dest: "{{minecraft.installation_path}}/minecraft.env"
 
-- name: Mount s3 as File System
-  shell: 's3fs s3-anto-minecraft-server -o use_cache=/tmp,iam_role=role-minecraft-server,allow_other {{minecraft.installation_path}} -o url="https://s3-eu-west-1.amazonaws.com" -o nonempty'
-
-- name: Install Scripts
-  copy:
-    src: "{{item}}"
-    dest: "{{minecraft.installation_path}}"
-    mode: 0755
-  with_items:
-    - stopServer.sh
-
 - name: Get the Installer for Chosen Flavor
   get_url:
     url: "{{installers[minecraft.flavor].url}}"
