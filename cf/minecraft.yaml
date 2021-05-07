@@ -254,69 +254,7 @@ Resources:
             ansible-galaxy collection install amazon.aws
             ansible-galaxy collection install community.aws
             ansible-playbook playbook.yaml
-  # CodebuildIam:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     RoleName: !Sub role-cb-anto-${Name}
-  #     Path: "/"
-  #     AssumeRolePolicyDocument: 
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service:
-  #               - codebuild.amazonaws.com
-  #           Action:
-  #               - 'sts:AssumeRole'
-  #     Policies:
-  #       - PolicyName: !Sub policy-cb-${Name}
-  #         PolicyDocument:
-  #           Version: "2012-10-17"
-  #           Statement:
-  #               - Effect: "Allow"
-  #                 Action: ["logs:CreateLogStream","logs:PutLogEvents"]
-  #                 Resource: !GetAtt Logs.Arn 
-  #               - Effect: "Allow"
-  #                 Action: "s3:*"
-  #                 Resource: "*"
-               
-  # Logs:
-  #   Type: AWS::Logs::LogGroup
-  #   Properties:
-  #     LogGroupName: !Sub "/aws/codebuild/cb-anto-${Name}"
-  #     RetentionInDays: 7
 
-  # Codebuild:
-  #   Type: AWS::CodeBuild::Project
-  #   Properties:
-  #     Artifacts:
-  #       ArtifactIdentifier: userdata
-  #       Location: !Ref BucketName
-  #       Name: userdata.zip
-  #       NamespaceType: NONE
-  #       Packaging: ZIP
-  #       Path: /
-  #       Type: S3
-  #       EncryptionDisabled: True
-  #     Description: Codebuild Project to build Lambda Function for Minecraft Server
-  #     Environment:
-  #       ComputeType: BUILD_GENERAL1_SMALL
-  #       Type: LINUX_CONTAINER 
-  #       Image: !Ref Image
-  #       PrivilegedMode: True 
-  #     LogsConfig:
-  #       CloudWatchLogs:
-  #         Status: ENABLED
-  #     Name: !Sub cb-anto-${Name}
-  #     ServiceRole: !GetAtt CodebuildIam.Arn
-  #     Source:
-  #       Auth:
-  #         Type: OAUTH
-  #       Type: GITHUB
-  #       Location: !Ref Repository
-  #     Triggers:
-  #       Webhook: True
-      
   Autoscalling:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 

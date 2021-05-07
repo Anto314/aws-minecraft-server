@@ -1,6 +1,5 @@
 ---
 java_version: 1.8.0
-fabric_url: "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.6.1.51/fabric-installer-0.6.1.51.jar"
 minecraft:
   installation_path: "/opt/minecraft"
   version: 1.16.1
