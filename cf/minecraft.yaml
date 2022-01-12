@@ -260,7 +260,9 @@ Resources:
             pip install botocore boto3
             ansible-galaxy collection install amazon.aws
             ansible-galaxy collection install community.aws
-            ansible-playbook playbook.yaml
+            aws s3 sync s3://${BucketName}/bins .
+            ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName}
+
 
   Autoscalling:
     Type: AWS::AutoScaling::AutoScalingGroup
