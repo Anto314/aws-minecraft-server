@@ -9,3 +9,4 @@ minecraft:
   period: 5
   stop_wait_time: 60
   flavor: vanilla
+bucketName: "{{lookup('env', 'BUCKET_NAME'}}"
