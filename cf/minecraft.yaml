@@ -145,6 +145,13 @@ Resources:
           FromPort: 53
           ToPort: 53
           CidrIp: 0.0.0.0/0
+          Description: Access to Udp
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Access to HTTP Server
+
   s3Bucket:
     Type: AWS::S3::Bucket
     Properties: 
@@ -288,7 +295,7 @@ Resources:
   CustomLifeCycleHook:
     Type: AWS::AutoScaling::LifecycleHook
     Properties: 
-      AutoScalingGroupName: !Sub asg-anto-${Name}
+      AutoScalingGroupName: !Ref Autoscalling
       DefaultResult: CONTINUE
       LifecycleHookName: my-lifecycle
       LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
