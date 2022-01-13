@@ -24,8 +24,6 @@
     dest: "{{minecraft.installation_path}}/{{item}}"
 
   with_items:
-    - eula.txt
-    - server.properties
     - minecraft_lib.sh
 
 - name: Generate Environment File
