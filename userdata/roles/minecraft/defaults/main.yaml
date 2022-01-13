@@ -10,4 +10,4 @@ installers:
   modded2:
     url: https://maven.minecraftforge.net/net/minecraftforge/forge/1.16.5-36.2.20/forge-1.16.5-36.2.20-installer.jar
     install_cmd: "java -jar {{minecraft.installation_path}}/installer.jar --installServer"
-    jar_cmd: "forge-1.16.5-36.2.20-universal.jar nogui"
+    jar_cmd: "forge-1.16.5-36.2.20.jar nogui"
