@@ -25,6 +25,7 @@
 
   with_items:
     - minecraft_lib.sh
+    - stopServer.sh
 
 - name: Generate Environment File
   template:
