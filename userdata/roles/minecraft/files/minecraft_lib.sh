@@ -19,7 +19,6 @@ mc_waiting(){
 }
 
 mc_stop_server() {
-        ARCHIVE_NAME="save.$FLAVOR.zip"
         mc_say "Stopping the Server"
         sleep "$PERIOD"
         
@@ -35,5 +34,11 @@ mc_stop_server() {
         mc_command "stop"
         sleep "$PERIOD"
         
-       aws s3 sync /opt/minecraft/ s3://s3-anto-minecraft/saves/ --exclude /opt/minecraft/logs --exclude /opt/minecraft/libraries
+        aws s3 sync /opt/minecraft/ s3://s3-anto-minecraft/saves/ --exclude /opt/minecraft/logs --exclude /opt/minecraft/libraries
+}
+
+mc_backup() {
+        mc_say "Backup"
+        mc_stop
+        systemctl start minecraft
 }
