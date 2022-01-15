@@ -35,5 +35,5 @@ mc_stop_server() {
         mc_command "stop"
         sleep "$PERIOD"
         
-        umount "$INSTALL_PATH"
+       aws s3 sync /opt/minecraft/ s3://s3-anto-minecraft/saves/ --exclude /opt/minecraft/logs --exclude /opt/minecraft/libraries
 }

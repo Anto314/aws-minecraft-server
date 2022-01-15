@@ -265,8 +265,6 @@ Resources:
             ansible-galaxy collection install community.aws
             aws s3 sync s3://${BucketName}/bin /tmp
             cd /tmp
-            git clone https://github.com/Tiiffi/mcrcon.git
-            cd mcrcon && make && make install && cd -
             sleep 2m
             ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName}
             echo END
