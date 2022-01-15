@@ -253,7 +253,10 @@ Resources:
               - !Ref SG
         UserData:
           Fn::Base64: !Sub |
-            #! /bin/bash
+            #! /bin/bash -ex
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            echo BEGIN
+            date '+%Y-%m-%d %H:%M:%S'
             yum install git gcc -y
             amazon-linux-extras install ansible2 -y
             yum install python-pip -y
@@ -262,7 +265,11 @@ Resources:
             ansible-galaxy collection install community.aws
             aws s3 sync s3://${BucketName}/bin /tmp
             cd /tmp
+            git clone https://github.com/Tiiffi/mcrcon.git
+            cd mcrcon && make && make install && cd -
+            sleep 2m
             ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName}
+            echo END
 
 
   Autoscalling:
