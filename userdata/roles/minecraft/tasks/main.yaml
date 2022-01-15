@@ -62,13 +62,13 @@
   cron:
     name: Backup
     minute: "0"
-    hours: "*/1"
+    hour: "*/1"
     job: "{{minecraft.installation_path}}/backup.sh"
 
 - name: Install boto3
   pip:
     name: boto3 botocore
-       
+
 - name: Wait That server is ready for players
   block:
     - name: Wait the server to start and load the map
