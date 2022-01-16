@@ -246,6 +246,7 @@ Resources:
         IamInstanceProfile: 
           Arn: !GetAtt IamInstanceProfile.Arn
         ImageId: !Ref Ami
+        InstanceType: !Ref ServerInstanceType
         NetworkInterfaces:
           - AssociatePublicIpAddress: True
             DeviceIndex: 0
@@ -281,16 +282,19 @@ Resources:
       HealthCheckGracePeriod: 30
       MaxSize: 1
       MinSize: 0
-      MixedInstancesPolicy:
-        LaunchTemplate:
-          LaunchTemplateSpecification:
-            LaunchTemplateName: !Sub lt-anto-${Name}
-            Version: !GetAtt LaunchTemplate.LatestVersionNumber
-          Overrides:
-            - InstanceType: !Ref ServerInstanceType
-        InstancesDistribution:
-          OnDemandPercentageAboveBaseCapacity: 0
-          SpotAllocationStrategy: lowest-price
+      LaunchTemplate:
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+        LaunchTemplateName: !Sub lt-anto-${Name}
+      # MixedInstancesPolicy:
+      #   LaunchTemplate:
+      #     LaunchTemplateSpecification:
+      #       LaunchTemplateName: !Sub lt-anto-${Name}
+      #       Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      #     Overrides:
+      #       - InstanceType: !Ref ServerInstanceType
+      #   InstancesDistribution:
+      #     OnDemandPercentageAboveBaseCapacity: 0
+      #     SpotAllocationStrategy: lowest-price
       Tags: 
         - Key: Name
           Value: !Sub ec2-anto-${Name}
@@ -300,36 +304,36 @@ Resources:
       VPCZoneIdentifier: 
         - !Ref Subnet
 
-  CustomLifeCycleHook:
-    Type: AWS::AutoScaling::LifecycleHook
-    Properties: 
-      AutoScalingGroupName: !Ref Autoscalling
-      DefaultResult: CONTINUE
-      LifecycleHookName: my-lifecycle
-      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
-      HeartbeatTimeout: 30
+  # CustomLifeCycleHook:
+  #   Type: AWS::AutoScaling::LifecycleHook
+  #   Properties: 
+  #     AutoScalingGroupName: !Ref Autoscalling
+  #     DefaultResult: CONTINUE
+  #     LifecycleHookName: my-lifecycle
+  #     LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+  #     HeartbeatTimeout: 30
 
-  SpotInstanceTerminaisonAutoscalling:
-    Type: AWS::Events::Rule
-    Properties:
-      Description: Detection of Spot Instance Terminaison by ASG
-      EventPattern: {
-      "source": [
-        "aws.autoscaling"
-      ],
-      "detail-type": [
-        "EC2 Instance-terminate Lifecycle Action"
-      ]
-    }
+  # SpotInstanceTerminaisonAutoscalling:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     Description: Detection of Spot Instance Terminaison by ASG
+  #     EventPattern: {
+  #     "source": [
+  #       "aws.autoscaling"
+  #     ],
+  #     "detail-type": [
+  #       "EC2 Instance-terminate Lifecycle Action"
+  #     ]
+  #   }
 
-  SpotInstanceTerminaisonEvent:
-    Type: AWS::Events::Rule
-    Properties: 
-      Description: Detection of Spot Instance Terminaison
-      EventPattern: {
-        "source": 
-          ["aws.ec2"],
-          "detail-type": [
-            "EC2 Spot Instance Interruption Warning"
-            ]
-      }
+  # SpotInstanceTerminaisonEvent:
+  #   Type: AWS::Events::Rule
+  #   Properties: 
+  #     Description: Detection of Spot Instance Terminaison
+  #     EventPattern: {
+  #       "source": 
+  #         ["aws.ec2"],
+  #         "detail-type": [
+  #           "EC2 Spot Instance Interruption Warning"
+  #           ]
+  #     }
