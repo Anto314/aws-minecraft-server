@@ -266,7 +266,7 @@ Resources:
             aws s3 sync s3://${BucketName}/bin /tmp
             cd /tmp
             sleep 2m
-            ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName}
+            ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName} snsTopicArn=${SnsTopic}
             echo END
 
 

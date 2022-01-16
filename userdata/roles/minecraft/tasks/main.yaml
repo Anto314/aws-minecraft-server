@@ -69,7 +69,7 @@
   shell: make install
   args:
     chdir: "{{minecraft.installation_path}}/mcrcon"
-    
+
 - name: Wait That server is ready for players
   block:
     - name: Wait the server to start and load the map
@@ -85,9 +85,10 @@
         return_content: true
       register: public_ip
 
-    - name: Notify users that the server is ready
-      community.aws.sns:
-        msg: "{{lookup('template', 'sns.success.j2')}}"
-        subject: Server Minecraft est pret!
-        topic: sns-cf-anto-minecraft-server
-        region: eu-west-1
+    - name: Generate the Topic Message
+      template:
+        src: sns.success.j2
+        dest: "message"
+    
+    - name: Broad Cast the message
+      shell: "aws sns publish --topicArn {{snsTopicArn}} --message {{lookup('template', 'sns.success.j2')}} --subject 'Server Minecraft est pret!'"
