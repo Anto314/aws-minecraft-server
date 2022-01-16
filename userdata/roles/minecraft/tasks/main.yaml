@@ -65,6 +65,11 @@
     hour: "*/1"
     job: "{{minecraft.installation_path}}/backup.sh"
 
+- name: Install mcrcon
+  shell: make install
+  args:
+    chdir: "{{minecraft.installation_path}}/mcrcon"
+    
 - name: Wait That server is ready for players
   block:
     - name: Wait the server to start and load the map
