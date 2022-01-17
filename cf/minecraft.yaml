@@ -260,8 +260,7 @@ Resources:
             date '+%Y-%m-%d %H:%M:%S'
             yum install git gcc -y
             yum install python3 -y
-            amazon-linux-extras install ansible2 -y
-            yum install python-pip -y
+            pip3 install ansible
             pip3 install botocore boto3
             ansible-galaxy collection install amazon.aws
             ansible-galaxy collection install community.aws
