@@ -4,4 +4,4 @@
 systemctl stop minecraft
 systemctl start minecraft
 
-aws sns publish --topicArn "$snsTopicArn" --message "Server Up" --subject 'Server Minecraft est pret!'
+aws sns publish --topicArn "$SNS_TOPIC_ARN" --message "Server Up" --subject 'Server Minecraft est pret!'

@@ -259,6 +259,7 @@ Resources:
             echo BEGIN
             date '+%Y-%m-%d %H:%M:%S'
             yum install git gcc -y
+            yum install python3 -y
             amazon-linux-extras install ansible2 -y
             yum install python-pip -y
             pip install botocore boto3
