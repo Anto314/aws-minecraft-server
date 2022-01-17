@@ -22,7 +22,7 @@
   copy:
     src: "{{item}}"
     dest: "{{minecraft.installation_path}}/{{item}}"
-    mode: 0644
+    mode: 0744
   with_items:
     - minecraft_lib.sh
     - stopServer.sh
