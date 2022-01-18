@@ -1,5 +1,5 @@
-. /opt/minecraft/minecraft.env
-. /opt/minecraft/minecraft_lib.sh
+. /opt/minecraft/bin/minecraft.env
+. /opt/minecraft/bin/minecraft_lib.sh
 
 systemctl stop minecraft
 systemctl start minecraft

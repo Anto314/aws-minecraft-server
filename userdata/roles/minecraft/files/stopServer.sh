@@ -1,6 +1,6 @@
  #! /bin/bash
-. /opt/minecraft/minecraft.env
-. /opt/minecraft/minecraft_lib.sh
+. /opt/minecraft/bin/minecraft.env
+. /opt/minecraft/bin/minecraft_lib.sh
 
 main(){
         mc_waiting

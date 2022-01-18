@@ -18,10 +18,16 @@
     path: "{{minecraft.installation_path}}"
     recurse: yes
 
+- name: Create Folder Bin
+  file:
+    state: directory
+    path: "{{minecraft.installation_path}}/bin"
+    recurse: yes
+
 - name: Copy Configuration File
   copy:
     src: "{{item}}"
-    dest: "{{minecraft.installation_path}}/{{item}}"
+    dest: "{{minecraft.installation_path}}/bin/{{item}}"
     mode: 0755
   with_items:
     - minecraft_lib.sh
@@ -32,7 +38,7 @@
 - name: Generate Environment File
   template:
     src: minecraft.env.j2
-    dest: "{{minecraft.installation_path}}/minecraft.env"
+    dest: "{{minecraft.installation_path}}/bin/minecraft.env"
 
 - name: Get the Installer for Chosen Flavor
   get_url:
