@@ -69,7 +69,7 @@
     name: Backup
     minute: "*/30"
     hour: "*"
-    job: "{{minecraft.installation_path}}/backup.sh"
+    job: "{{minecraft.installation_path}}/bin/backup.sh"
 
 - name: Install mcrcon
   shell: make install

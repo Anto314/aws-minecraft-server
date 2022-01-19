@@ -34,7 +34,7 @@ mc_stop_server() {
         mc_command "stop"
         sleep "$PERIOD"
         
-        aws s3 sync /opt/minecraft/ s3://"$BUCKET_NAME"/saves/ --exclude /opt/minecraft/logs/* --exclude /opt/minecraft/libraries/* --exclude /opt/minecraft/bin/*
+        aws s3 sync /opt/minecraft/ s3://"$BUCKET_NAME"/saves/ --exclude "/opt/minecraft/logs/*" --exclude "/opt/minecraft/libraries/*" --exclude "/opt/minecraft/bin/*"
 }
 
 mc_backup() {
