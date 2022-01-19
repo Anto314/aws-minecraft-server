@@ -243,6 +243,8 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub lt-anto-${Name}
       LaunchTemplateData:
+        CreditSpecification: 
+          CpuCredits: standard
         IamInstanceProfile: 
           Arn: !GetAtt IamInstanceProfile.Arn
         ImageId: !Ref Ami
