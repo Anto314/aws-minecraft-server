@@ -67,8 +67,8 @@
 - name: Put the backup script in place
   cron:
     name: Backup
-    minute: "*/30"
-    hour: "*"
+    minute: "0"
+    hour: "*/1"
     job: "{{minecraft.installation_path}}/bin/backup.sh"
 
 - name: Install mcrcon
