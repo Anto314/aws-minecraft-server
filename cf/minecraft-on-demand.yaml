@@ -296,7 +296,7 @@ Resources:
       #       - InstanceType: !Ref ServerInstanceType
       #   InstancesDistribution:
       #     OnDemandPercentageAboveBaseCapacity: 0
-      #     SpotAllocationStrategy: lowest-price
+      #     SpotAllocationStrategy: capacity-optimized
       Tags: 
         - Key: Name
           Value: !Sub ec2-anto-${Name}
