@@ -33,6 +33,7 @@
     - minecraft_lib.sh
     - stopServer.sh
     - backup.sh
+    - ssm.sh
  
 
 - name: Generate Environment File

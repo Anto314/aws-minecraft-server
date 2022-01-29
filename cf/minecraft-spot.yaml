@@ -1,59 +1,28 @@
 
 AWSTemplateFormatVersion: "2010-09-09"
-Description: A simple Minecraft Server Solution
+Description: A simple Minecraft Server Solution (Spot Mode)
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label: Project
-        Parameters: [Name,BucketName]
+        Parameters: [Name]
       - Label: Network
-        Parameters: [CIDR,Az]
+        Parameters: [CIDR]
       - Label: Server
-        Parameters: [BucketNameParameter, ServerInstanceType, Ami]
-      - Label: Source Code
-        Parameters: [Repository]
-      - Label: CodeBuild
-        Parameters: [ComputeType, Type, Image]
-      - Label: Low Level Configuration
+        Parameters: [ServerInstanceType, Ami]
 
     ParameterLabels:
       CIDR:
         default: "Which is the CIDR for this Solution ?"
-      Az:
-        default: "On which Az the subnet with lay on ?"
       Name:
         default: "Name of the Solution"
-      BucketName:
-        default: "Name of the Bucket"
-      BucketNameParameter:
-        default: "Name of the SSM Parameter that the instance will read"
       ServerInstanceType:
         default: "Instance Type of Server"
-      Ami:
-        default: "AMI to use to run with Instance"
-      Repository:
-        default: Repository Url
 Parameters:
   CIDR:
     Description: VPC Cidr
     Type: String
-    Default: 10.24.0.0/28
-  Az:
-    Description: Subnet Availability Zone
-    Type: AWS::EC2::AvailabilityZone::Name
-    Default: eu-west-1a
-  Name:
-    Description: Stack Name
-    Type: String
-    Default: minecraft-server
-  BucketName:
-    Description: Bucket Name
-    Type: String
-    Default: s3-anto-minecraft-server
-  BucketNameParameter:
-    Description: SSM Parameter where the bucket Name will be stored
-    Type: String
-    Default: /infra/s3/bucketName
+    Default: 10.24.0.0/26
   ServerInstanceType:
     Description: Instance Type for the Server
     Type: String
@@ -62,24 +31,7 @@ Parameters:
     Description: AMI to Use for the Server
     Type: String
     Default: ami-036559f6f83de21be
-  Repository:
-    Description: Repository Url
-    Type: String
-    Default: "https://github.com/Anto314/aws-minecraft-server.git"
-
-  ComputeType: 
-    Description: Codebuild Compute Size
-    Type: String
-    Default: BUILD_GENERAL1_SMALL
-  Type: 
-    Description: Type of Container to be run for Build
-    Type: String
-    Default: LINUX_CONTAINER 
-  Image: 
-    Description: Docker Image to be used by Codebuild
-    Type: String
-    Default: aws/codebuild/amazonlinux2-aarch64-standard:2.0
-
+  
 Resources:
   Vpc:
     Type: AWS::EC2::VPC
@@ -88,27 +40,57 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: !Sub vpc-${Name}
-  Subnet:
+          Value: !Sub vpc-${AWS::StackName}
+  SubnetA:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Ref Az
+      AvailabilityZone: !Sub ${AWS::Region}a
       VpcId: !Ref Vpc
-      CidrBlock: !Ref CIDR
+      CidrBlock: !Select [0, !Cidr [ !Ref CIDR, 4, 4 ]]
       Tags:
         - Key: Name
-          Value: !Sub sbn-${Name}
-  SubnetRouteTableAttachment:
+          Value: !Sub sbn-${AWS::StackName}-1a
+  SubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Sub ${AWS::Region}b
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [1, !Cidr [ !Ref CIDR, 4, 4 ]]
+      Tags:
+        - Key: Name
+          Value: !Sub sbn-${AWS::StackName}-1b
+  SubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Sub ${AWS::Region}c
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [2, !Cidr [ !Ref CIDR, 4, 4 ]]
+      Tags:
+        - Key: Name
+          Value: !Sub sbn-${AWS::StackName}-1c
+
+  SubnetRouteTableAttachmentA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: 
       RouteTableId: !Ref RoutingTable
-      SubnetId: !Ref Subnet
+      SubnetId: !Ref SubnetA
+  SubnetRouteTableAttachmentB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref RoutingTable
+      SubnetId: !Ref SubnetB
+  SubnetRouteTableAttachmentC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref RoutingTable
+      SubnetId: !Ref SubnetC
+
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub igw-anto-${Name}
+          Value: !Sub igw-anto-${AWS::StackName}
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties: 
@@ -120,7 +102,7 @@ Resources:
     Properties: 
       Tags: 
         - Key: Name 
-          Value: !Sub rtb-anto-${Name}
+          Value: !Sub rtb-anto-${AWS::StackName}
       VpcId: !Ref Vpc
 
   InternetAccessRoute:
@@ -132,7 +114,7 @@ Resources:
   SG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub sgec2-${Name}
+      GroupName: !Sub sgec2-${AWS::StackName}
       GroupDescription: Protect Minecraft Server Access
       VpcId: !Ref Vpc
       SecurityGroupEgress:
@@ -155,12 +137,12 @@ Resources:
   s3Bucket:
     Type: AWS::S3::Bucket
     Properties: 
-      BucketName: !Ref BucketName
+      BucketName: !Sub s3-anto-${AWS::StackName} 
       AccessControl: Private
   IamRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub role-${Name}
+      RoleName: !Sub role-${AWS::StackName}
       Path: "/"
       AssumeRolePolicyDocument: 
         Version: 2012-10-17
@@ -175,7 +157,7 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
-        - PolicyName: !Sub policy-s3-${Name}
+        - PolicyName: !Sub policy-s3-${AWS::StackName}
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -186,11 +168,6 @@ Resources:
                     - s3:HeadObject
                     - s3:ListBucket
                   Resource: !Sub ${s3Bucket.Arn}*
-                - Effect: "Allow"
-                  Action:
-                  - ssm:GetParameter
-                  Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${BucketNameParameter}
-
                 - Effect: Allow
                   Action:
                     - ssmmessages:CreateControlChannel
@@ -215,33 +192,41 @@ Resources:
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ip-${Name}
+      InstanceProfileName: !Sub ip-${AWS::StackName}
       Path: /
       Roles:
         - !Ref IamRole
-  S3ParameterName:
-    Type: AWS::SSM::Parameter
-    Properties: 
-      Name: !Ref BucketNameParameter
-      Tier: Standard
-      Type: String
-      Value: !Ref BucketName
-  SNSParameterName:
-    Type: AWS::SSM::Parameter
-    Properties: 
-      Name: /infra/sns/topicName
-      Tier: Standard
-      Type: String
-      Value: !GetAtt SnsTopic.TopicName
   SnsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: !Sub sns-cf-anto-${Name} 
-      TopicName: !Sub sns-cf-anto-${Name}
+      DisplayName: !Sub sns-anto-${AWS::StackName} 
+      TopicName: !Sub sns-cf-anto-${AWS::StackName}
+  SnsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SnsTopic
+      PolicyDocument:
+        Statement:
+          - Sid: sns
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: 'sns:Publish'
+            Resource:
+              - !Ref SnsTopic
+          - Sid: AllowAWS
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'sns:Publish'
+            Resource:
+              - !Ref SnsTopic
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: !Sub lt-anto-${Name}
+      LaunchTemplateName: !Sub lt-anto-${AWS::StackName}
       LaunchTemplateData:
         CreditSpecification: 
           CpuCredits: standard
@@ -266,76 +251,212 @@ Resources:
             pip3 install botocore boto3
             ansible-galaxy collection install amazon.aws
             ansible-galaxy collection install community.aws
-            aws s3 sync s3://${BucketName}/bin /tmp
+            aws s3 sync s3://${s3Bucket}/bin /tmp
             cd /tmp
             sleep 2m
-            ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName} --extra-vars snsTopicArn=\"${SnsTopic}\"
+            ansible-playbook playbook.yaml --extra-vars bucketName=${s3Bucket} --extra-vars snsTopicArn=\"${SnsTopic}\"
             echo END
-
-
   Autoscalling:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
-      AutoScalingGroupName: !Sub asg-anto-${Name}
+      AutoScalingGroupName: !Sub asg-anto-${AWS::StackName}
       AvailabilityZones: 
-        - !Ref Az
+        - !Sub ${AWS::Region}a
+        - !Sub ${AWS::Region}b
+        - !Sub ${AWS::Region}c
       Cooldown: 5
       DesiredCapacity: 0
       HealthCheckGracePeriod: 30
       MaxSize: 1
       MinSize: 0
-      LaunchTemplate:
-        Version: !GetAtt LaunchTemplate.LatestVersionNumber
-        LaunchTemplateName: !Sub lt-anto-${Name}
-      # MixedInstancesPolicy:
-      #   LaunchTemplate:
-      #     LaunchTemplateSpecification:
-      #       LaunchTemplateName: !Sub lt-anto-${Name}
-      #       Version: !GetAtt LaunchTemplate.LatestVersionNumber
-      #     Overrides:
-      #       - InstanceType: !Ref ServerInstanceType
-      #   InstancesDistribution:
-      #     OnDemandPercentageAboveBaseCapacity: 0
-      #     SpotAllocationStrategy: capacity-optimized
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateName: !Sub lt-anto-${AWS::StackName}
+            Version: !GetAtt LaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref ServerInstanceType
+        InstancesDistribution:
+          OnDemandPercentageAboveBaseCapacity: 0
+          SpotAllocationStrategy: capacity-optimized
       Tags: 
         - Key: Name
-          Value: !Sub ec2-anto-${Name}
+          Value: !Sub ec2-anto-${AWS::StackName}
           PropagateAtLaunch: True
       TerminationPolicies: 
         - OldestInstance
       VPCZoneIdentifier: 
-        - !Ref Subnet
+        - !Ref SubnetA
+        - !Ref SubnetB
+        - !Ref SubnetC
 
-  # CustomLifeCycleHook:
-  #   Type: AWS::AutoScaling::LifecycleHook
-  #   Properties: 
-  #     AutoScalingGroupName: !Ref Autoscalling
-  #     DefaultResult: CONTINUE
-  #     LifecycleHookName: my-lifecycle
-  #     LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
-  #     HeartbeatTimeout: 30
+  CustomLifeCycleHook:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties: 
+      AutoScalingGroupName: !Ref Autoscalling
+      DefaultResult: CONTINUE
+      LifecycleHookName: my-lifecycle
+      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+      HeartbeatTimeout: 300
 
-  # SpotInstanceTerminaisonAutoscalling:
-  #   Type: AWS::Events::Rule
-  #   Properties:
-  #     Description: Detection of Spot Instance Terminaison by ASG
-  #     EventPattern: {
-  #     "source": [
-  #       "aws.autoscaling"
-  #     ],
-  #     "detail-type": [
-  #       "EC2 Instance-terminate Lifecycle Action"
-  #     ]
-  #   }
+  AutoscallingTerminaisonEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Detection of Spot Instance Terminaison by ASG
+      EventPattern: {
+      "source": [
+        "aws.autoscaling"
+      ],
+      "detail-type": [
+        "EC2 Instance-terminate Lifecycle Action"
+      ]
+    }
+      Targets:
+        - Id: Lambda 
+          Arn: !GetAtt Lambda.Arn
+        - Id: SNS
+          Arn: !Ref SnsTopic
 
-  # SpotInstanceTerminaisonEvent:
-  #   Type: AWS::Events::Rule
-  #   Properties: 
-  #     Description: Detection of Spot Instance Terminaison
-  #     EventPattern: {
-  #       "source": 
-  #         ["aws.ec2"],
-  #         "detail-type": [
-  #           "EC2 Spot Instance Interruption Warning"
-  #           ]
-  #     }
+  SpotInstanceTerminaisonEvent:
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: Detection of Spot Instance Terminaison
+      EventPattern: {
+        "source": 
+          ["aws.ec2"],
+          "detail-type": [
+            "EC2 Spot Instance Interruption Warning"
+            ]
+      }
+      Targets:
+        - Id: Lambda 
+          Arn: !GetAtt Lambda.Arn
+        - Id: SNS
+          Arn: !Ref SnsTopic
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub lambda-anto-${AWS::StackName}
+      MemorySize: 128
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.7
+      Timeout: 30
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SnsTopic
+      Code:
+        ZipFile: |
+          import os
+          import json 
+          import boto3
+          import uuid
+          import time
+
+          def sendMessageSNSTopic(message):
+            snsTopicArn = os.environ["SNS_TOPIC_ARN"]
+            sns = boto3.client('sns')
+            client.publish(
+              TopicArn=snsTopicArn,
+              Message=message,
+              Subject='Minecraft Server'
+            )
+
+          def runCommandonEC2(instanceId, message):
+            ssm = boto3.client('ssm')
+            response = ssm.send_command(
+              InstanceIds=[instanceId],
+              DocumentName="AWS-RunShellScript",
+              Parameters={'commands': [f'/opt/minecraft/bin/ssm.sh "{message}"']}
+            )
+
+            commandId = response["Command"]["CommandId"]
+
+            status = "InProgress"
+
+            while (status != "InProgress"):
+              status = ssm.get_command_invocation(
+                CommandId=commandId,
+                InstanceId=instanceId
+              )["Status"]
+
+
+            message = "Backup Successfully launched"
+            if status != "Success":
+              message = "Cannot execute backup"
+            
+            sendMessageSNSTopic(message)
+
+            return status != "Success"
+
+          def handleAutoscalling(event):
+            instanceId = event["detail"]["EC2InstanceId"]
+            pass
+          
+          def handleEc2Spot(event):
+            instanceId = event["detail"]["instance-id"]
+            runCommandonEC2(instanceId, "Spot Instance Terminaison")
+
+            # Terminate the instance
+            ec2 = boto3.client('ec2')
+            response = ec2.terminate_instances(
+            InstanceIds=[instanceId]
+            )
+
+          def handler(event, context):
+            print(f"event: {event}, Context:{context}")
+            source = event["source"]
+
+            if source == "aws.ec2":
+              # Handling Spot Instance Terminaison
+              handleEc2Spot(event)
+            else if source == "aws.autoscaling":
+              # Handling Autoscalling Group
+              handleAutoscalling(event)
+            else:
+              print("We have an issue")
+            return true
+
+  LambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub /aws/lambda/lambda-anto-${AWS::StackName}
+      RetentionInDays: 1
+
+  PermissionAutoscallingTerminaisonEvent:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt Lambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AutoscallingTerminaisonEvent.Arn
+
+  PermissionSpotInstanceTerminaison:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt Lambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt SpotInstanceTerminaisonEvent.Arn
+  
