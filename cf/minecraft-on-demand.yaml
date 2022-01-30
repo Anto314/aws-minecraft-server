@@ -175,7 +175,7 @@ Resources:
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ip-${AWS::StackName}
+      InstanceProfileName: !Sub ip-${AWS::Region}-${AWS::StackName}
       Path: /
       Roles:
         - !Ref IamRole
