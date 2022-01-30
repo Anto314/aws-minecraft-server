@@ -175,15 +175,15 @@ Resources:
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ip-${Name}
+      InstanceProfileName: !Sub ip-${AWS::StackName}
       Path: /
       Roles:
         - !Ref IamRole
   SnsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: !Sub sns-cf-anto-${AWS::Region}-${Name} 
-      TopicName: !Sub sns-cf-anto--${AWS::Region}-${Name}
+      DisplayName: !Sub sns-cf-anto-${AWS::Region}-${AWS::StackName} 
+      TopicName: !Sub sns-cf-anto--${AWS::Region}-${AWS::StackName}
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
