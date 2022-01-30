@@ -13,7 +13,7 @@ Parameters:
   Ami:
     Description: AMI to Use for the Server
     Type: String
-    Default: ami-036559f6f83de21be
+    Default: ami-05d465f81e4a520d4
 
 Resources:
   Vpc:
@@ -183,7 +183,7 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Sub sns-cf-anto-${AWS::Region}-${AWS::StackName} 
-      TopicName: !Sub sns-cf-anto--${AWS::Region}-${AWS::StackName}
+      TopicName: !Sub sns-cf-anto-${AWS::Region}-${AWS::StackName}
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:

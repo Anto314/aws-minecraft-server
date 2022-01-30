@@ -96,5 +96,5 @@
       community.aws.sns:
         msg: "{{lookup('template', 'sns.success.j2')}}"
         subject: Server Minecraft est pret!
-        topic: sns-cf-anto-minecraft-server
+        topic: "{{snsTopicArn.split(':')[-1]"
         region: eu-west-1
