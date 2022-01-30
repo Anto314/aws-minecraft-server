@@ -1,59 +1,11 @@
 
 AWSTemplateFormatVersion: "2010-09-09"
 Description: A simple Minecraft Server Solution
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-      - Label: Project
-        Parameters: [Name,BucketName]
-      - Label: Network
-        Parameters: [CIDR,Az]
-      - Label: Server
-        Parameters: [BucketNameParameter, ServerInstanceType, Ami]
-      - Label: Source Code
-        Parameters: [Repository]
-      - Label: CodeBuild
-        Parameters: [ComputeType, Type, Image]
-      - Label: Low Level Configuration
-
-    ParameterLabels:
-      CIDR:
-        default: "Which is the CIDR for this Solution ?"
-      Az:
-        default: "On which Az the subnet with lay on ?"
-      Name:
-        default: "Name of the Solution"
-      BucketName:
-        default: "Name of the Bucket"
-      BucketNameParameter:
-        default: "Name of the SSM Parameter that the instance will read"
-      ServerInstanceType:
-        default: "Instance Type of Server"
-      Ami:
-        default: "AMI to use to run with Instance"
-      Repository:
-        default: Repository Url
 Parameters:
   CIDR:
     Description: VPC Cidr
     Type: String
-    Default: 10.24.0.0/28
-  Az:
-    Description: Subnet Availability Zone
-    Type: AWS::EC2::AvailabilityZone::Name
-    Default: eu-west-1a
-  Name:
-    Description: Stack Name
-    Type: String
-    Default: minecraft-server
-  BucketName:
-    Description: Bucket Name
-    Type: String
-    Default: s3-anto-minecraft-server
-  BucketNameParameter:
-    Description: SSM Parameter where the bucket Name will be stored
-    Type: String
-    Default: /infra/s3/bucketName
+    Default: 10.24.0.0/26
   ServerInstanceType:
     Description: Instance Type for the Server
     Type: String
@@ -62,23 +14,6 @@ Parameters:
     Description: AMI to Use for the Server
     Type: String
     Default: ami-036559f6f83de21be
-  Repository:
-    Description: Repository Url
-    Type: String
-    Default: "https://github.com/Anto314/aws-minecraft-server.git"
-
-  ComputeType: 
-    Description: Codebuild Compute Size
-    Type: String
-    Default: BUILD_GENERAL1_SMALL
-  Type: 
-    Description: Type of Container to be run for Build
-    Type: String
-    Default: LINUX_CONTAINER 
-  Image: 
-    Description: Docker Image to be used by Codebuild
-    Type: String
-    Default: aws/codebuild/amazonlinux2-aarch64-standard:2.0
 
 Resources:
   Vpc:
@@ -88,27 +23,57 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: !Sub vpc-${Name}
-  Subnet:
+          Value: !Sub vpc-${AWS::Region}-${AWS::StackName}
+  SubnetA:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Ref Az
+      AvailabilityZone: !Sub ${AWS::Region}a
       VpcId: !Ref Vpc
-      CidrBlock: !Ref CIDR
+      CidrBlock: !Select [0, !Cidr [ !Ref CIDR, 4, 4 ]]
       Tags:
         - Key: Name
-          Value: !Sub sbn-${Name}
-  SubnetRouteTableAttachment:
+          Value: !Sub sbn-${AWS::Region}-${AWS::StackName}-a
+  SubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Sub ${AWS::Region}b
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [1, !Cidr [ !Ref CIDR, 4, 4 ]]
+      Tags:
+        - Key: Name
+          Value: !Sub sbn-${AWS::Region}-${AWS::StackName}-b
+  SubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Sub ${AWS::Region}c
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [2, !Cidr [ !Ref CIDR, 4, 4 ]]
+      Tags:
+        - Key: Name
+          Value: !Sub sbn-${AWS::Region}-${AWS::StackName}-c
+
+  SubnetRouteTableAttachmentA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: 
       RouteTableId: !Ref RoutingTable
-      SubnetId: !Ref Subnet
+      SubnetId: !Ref SubnetA
+  SubnetRouteTableAttachmentB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref RoutingTable
+      SubnetId: !Ref SubnetB
+  SubnetRouteTableAttachmentC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref RoutingTable
+      SubnetId: !Ref SubnetC
+
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub igw-anto-${Name}
+          Value: !Sub igw-anto-${AWS::Region}-${AWS::StackName}
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties: 
@@ -120,7 +85,7 @@ Resources:
     Properties: 
       Tags: 
         - Key: Name 
-          Value: !Sub rtb-anto-${Name}
+          Value: !Sub rtb-anto-${AWS::Region}-${AWS::StackName}
       VpcId: !Ref Vpc
 
   InternetAccessRoute:
@@ -132,7 +97,7 @@ Resources:
   SG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub sgec2-${Name}
+      GroupName: !Sub sgec2-${AWS::Region}-${AWS::StackName}
       GroupDescription: Protect Minecraft Server Access
       VpcId: !Ref Vpc
       SecurityGroupEgress:
@@ -155,12 +120,12 @@ Resources:
   s3Bucket:
     Type: AWS::S3::Bucket
     Properties: 
-      BucketName: !Ref BucketName
+      BucketName: !Sub s3-anto-${AWS::Region}-${AWS::StackName} 
       AccessControl: Private
   IamRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub role-${Name}
+      RoleName: !Sub role-${AWS::Region}-${AWS::StackName}
       Path: "/"
       AssumeRolePolicyDocument: 
         Version: 2012-10-17
@@ -175,7 +140,7 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
-        - PolicyName: !Sub policy-s3-${Name}
+        - PolicyName: !Sub policy-s3-${AWS::Region}-${AWS::StackName}
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -186,11 +151,6 @@ Resources:
                     - s3:HeadObject
                     - s3:ListBucket
                   Resource: !Sub ${s3Bucket.Arn}*
-                - Effect: "Allow"
-                  Action:
-                  - ssm:GetParameter
-                  Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${BucketNameParameter}
-
                 - Effect: Allow
                   Action:
                     - ssmmessages:CreateControlChannel
@@ -219,29 +179,15 @@ Resources:
       Path: /
       Roles:
         - !Ref IamRole
-  S3ParameterName:
-    Type: AWS::SSM::Parameter
-    Properties: 
-      Name: !Ref BucketNameParameter
-      Tier: Standard
-      Type: String
-      Value: !Ref BucketName
-  SNSParameterName:
-    Type: AWS::SSM::Parameter
-    Properties: 
-      Name: /infra/sns/topicName
-      Tier: Standard
-      Type: String
-      Value: !GetAtt SnsTopic.TopicName
   SnsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: !Sub sns-cf-anto-${Name} 
-      TopicName: !Sub sns-cf-anto-${Name}
+      DisplayName: !Sub sns-cf-anto-${AWS::Region}-${Name} 
+      TopicName: !Sub sns-cf-anto--${AWS::Region}-${Name}
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: !Sub lt-anto-${Name}
+      LaunchTemplateName: !Sub lt-anto-${AWS::Region}-${AWS::StackName}
       LaunchTemplateData:
         CreditSpecification: 
           CpuCredits: standard
@@ -266,19 +212,22 @@ Resources:
             pip3 install botocore boto3
             ansible-galaxy collection install amazon.aws
             ansible-galaxy collection install community.aws
-            aws s3 sync s3://${BucketName}/bin /tmp
+            aws s3 sync s3://${s3Bucket}/bin /tmp
             cd /tmp
             sleep 2m
-            ansible-playbook playbook.yaml --extra-vars bucketName=${BucketName} --extra-vars snsTopicArn=\"${SnsTopic}\"
+            export AWS_DEFAULT_REGION=${AWS::Region}
+            ansible-playbook playbook.yaml --extra-vars bucketName=${s3Bucket} --extra-vars snsTopicArn=\"${SnsTopic}\"
             echo END
 
 
   Autoscalling:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
-      AutoScalingGroupName: !Sub asg-anto-${Name}
+      AutoScalingGroupName: !Sub asg-anto-${AWS::Region}-${AWS::StackName}
       AvailabilityZones: 
-        - !Ref Az
+        - !Sub ${AWS::Region}a
+        - !Sub ${AWS::Region}b
+        - !Sub ${AWS::Region}c
       Cooldown: 5
       DesiredCapacity: 0
       HealthCheckGracePeriod: 30
@@ -286,56 +235,15 @@ Resources:
       MinSize: 0
       LaunchTemplate:
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
-        LaunchTemplateName: !Sub lt-anto-${Name}
-      # MixedInstancesPolicy:
-      #   LaunchTemplate:
-      #     LaunchTemplateSpecification:
-      #       LaunchTemplateName: !Sub lt-anto-${Name}
-      #       Version: !GetAtt LaunchTemplate.LatestVersionNumber
-      #     Overrides:
-      #       - InstanceType: !Ref ServerInstanceType
-      #   InstancesDistribution:
-      #     OnDemandPercentageAboveBaseCapacity: 0
-      #     SpotAllocationStrategy: capacity-optimized
+        LaunchTemplateName: !Sub lt-anto-${AWS::Region}-${AWS::StackName}
+     
       Tags: 
         - Key: Name
-          Value: !Sub ec2-anto-${Name}
+          Value: !Sub ec2-anto-${AWS::Region}-${AWS::StackName}
           PropagateAtLaunch: True
       TerminationPolicies: 
         - OldestInstance
       VPCZoneIdentifier: 
-        - !Ref Subnet
-
-  # CustomLifeCycleHook:
-  #   Type: AWS::AutoScaling::LifecycleHook
-  #   Properties: 
-  #     AutoScalingGroupName: !Ref Autoscalling
-  #     DefaultResult: CONTINUE
-  #     LifecycleHookName: my-lifecycle
-  #     LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
-  #     HeartbeatTimeout: 30
-
-  # SpotInstanceTerminaisonAutoscalling:
-  #   Type: AWS::Events::Rule
-  #   Properties:
-  #     Description: Detection of Spot Instance Terminaison by ASG
-  #     EventPattern: {
-  #     "source": [
-  #       "aws.autoscaling"
-  #     ],
-  #     "detail-type": [
-  #       "EC2 Instance-terminate Lifecycle Action"
-  #     ]
-  #   }
-
-  # SpotInstanceTerminaisonEvent:
-  #   Type: AWS::Events::Rule
-  #   Properties: 
-  #     Description: Detection of Spot Instance Terminaison
-  #     EventPattern: {
-  #       "source": 
-  #         ["aws.ec2"],
-  #         "detail-type": [
-  #           "EC2 Spot Instance Interruption Warning"
-  #           ]
-  #     }
+        - !Ref SubnetA
+        - !Ref SubnetB
+        - !Ref SubnetC
