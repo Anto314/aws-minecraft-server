@@ -2,7 +2,7 @@ installers:
   fabric-1.19:
     url: "https://meta.fabricmc.net/v2/versions/loader/1.19.1/0.14.8/0.11.0/server/jar"
     install_cmd: "echo Installed"
-    jar_cmd: "fabric-server-mc.1.19.1-loader.0.14.8-launcher.0.11.0.jar nogui"
+    jar_cmd: "installer.jar nogui"
   modded:
     url: "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.12.2-14.23.5.2831/forge-1.12.2-14.23.5.2831-installer.jar"
     install_cmd: "java -jar {{minecraft.installation_path}}/installer.jar --installServer"
