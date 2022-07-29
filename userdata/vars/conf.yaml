@@ -8,4 +8,4 @@ minecraft:
     xmx: 3G
   period: 5
   stop_wait_time: 30
-  flavor: vanilla
+  flavor: fabric-1.19
