@@ -6,12 +6,15 @@ Parameters:
     Type: String
   DefaultSourceBucket:
     Type: String
-    Default: s3-anto-lambda-artifactbucket
+    Default: artifactbucket
+  ApplicationStack:
+    Type: String
+    Default: anto
 Resources: 
-  builderrole: 
+  CodebuildRole: 
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub role-kyceu-lambda-build-${LambdaName} 
+      RoleName: !Sub role-${ApplicationStack}-cb-${LambdaName} 
       AssumeRolePolicyDocument: 
         Version: "2012-10-17"
         Statement: 
@@ -29,14 +32,8 @@ Resources:
             Statement:
               - Effect: Allow
                 Resource:
-                  - Fn::Join:
-                      -   "-"
-                      -   - "arn:aws:logs:eu-west-1:334073175487:log-group:/aws/codebuild/cbp-gp-d-ew1-kyceu-lambda" 
-                          - !Sub ${LambdaName}*
-                  - Fn::Join:
-                    -   "-"
-                    -   - "arn:aws:logs:eu-west-1:334073175487:log-group:/aws/codebuild/cbp-gp-d-ew1-kyceu-lambda"
-                        - !Sub ${LambdaName}/*
+                  - !Sub "arn:aws:logs:eu-west-1:334073175487:log-group:/aws/codebuild/cb-ew1-${ApplicationStack}-${LambdaName}" 
+                  - !Sub "arn:aws:logs:eu-west-1:334073175487:log-group:/aws/codebuild/cb-ew1-${ApplicationStack}-${LambdaName}"
                 Action:
                 - logs:CreateLogGroup
                 - logs:CreateLogStream
@@ -50,10 +47,10 @@ Resources:
                   - s3:GetObject
                   - s3:List*
                   - s3:PutObject
-  pipelinerole:
+  CodePipelineRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub role-kyceu-lambda-pipeline-${LambdaName}
+      RoleName: !Sub role-${ApplicationStack}-cp-${LambdaName}
       AssumeRolePolicyDocument: 
         Version: "2012-10-17"
         Statement: 
@@ -187,7 +184,7 @@ Resources:
     Type: AWS::CodeCommit::Repository
     Properties:
       RepositoryDescription: !Ref LambdaDescription
-      RepositoryName: !Sub cc-kyceu-lambda-${LambdaName}
+      RepositoryName: !Sub cc-ew1-${ApplicationStack}-${LambdaName}
 
   builder:
     Type: AWS::CodeBuild::Project
@@ -208,12 +205,12 @@ Resources:
           - Name: LambdaDescription
             Type: PLAINTEXT
             Value: !Ref LambdaDescription
-      Name: !Sub cbp-gp-d-ew1-kyceu-lambda-${LambdaName}
-      ServiceRole: !Ref builderrole
+      Name: !Sub cb-ew1-${ApplicationStack}-${LambdaName}
+      ServiceRole: !Ref CodebuildRole
       Source:
         Type: CODEPIPELINE
       TimeoutInMinutes: 5
-  pipeline:
+  CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       ArtifactStore:
@@ -221,7 +218,7 @@ Resources:
         Location: s3-gemalto-kyceu-d-ew1-lambda-artifacts
       Name: !Sub cp-kyceu-lambda-${LambdaName}
       RestartExecutionOnUpdate: true
-      RoleArn: !GetAtt pipelinerole.Arn
+      RoleArn: !GetAtt CodePipelineRole.Arn
       Stages:      
         - Name: Source
           Actions:
@@ -242,7 +239,7 @@ Resources:
         - Name: Build
           Actions:
           - InputArtifacts:
-              - Name: !Sub sourceCode
+              - Name: sourceCode
             Name: Build
             ActionTypeId:
               Category: Build
@@ -250,16 +247,16 @@ Resources:
               Provider: CodeBuild
               Version: "1"
             OutputArtifacts:
-              - Name: !Sub lambdaCode
-              - Name: !Sub cloudformation
+              - Name: lambdaCode
+              - Name: cloudformation
             Configuration:
               ProjectName: !Sub cbp-gp-d-ew1-kyceu-lambda-${LambdaName}
             RunOrder: 1
         - Name: Deploy
           Actions:
           - InputArtifacts:
-              - Name: !Sub lambdaCode
-              - Name: !Sub cloudformation
+              - Name: lambdaCode
+              - Name: cloudformation
             Name: Deploy
             ActionTypeId:
               Category: Deploy
@@ -305,7 +302,7 @@ Resources:
               -
                 Effect: Allow
                 Action: codepipeline:StartPipelineExecution
-                Resource: !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref pipeline ] ] 
+                Resource: !Join [ '', [ 'arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref CodePipeline ] ] 
 
   AmazonCloudWatchEventRule:
     Type: AWS::Events::Rule

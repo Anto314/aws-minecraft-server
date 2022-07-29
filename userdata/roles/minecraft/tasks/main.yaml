@@ -7,7 +7,7 @@
   package:
     name: "{{item}}"
   with_items:
-    - "java-{{java_version}}"
+    - java-17-amazon-corretto-devel
     - tmux
     - htop
     - awscli
@@ -71,11 +71,13 @@
     minute: "0"
     hour: "*/1"
     job: "{{minecraft.installation_path}}/bin/backup.sh"
+  when: backup == "enabled"
 
 - name: Install mcrcon
-  shell: make install
+  shell: python3 -m pip install mcrcon
   args:
     chdir: "{{minecraft.installation_path}}/mcrcon"
+  when: backup == "enabled"
 
 - name: Wait That server is ready for players
   block:

@@ -90,7 +90,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub igw-anto-${AWS::Region}-${AWS::StackName}
+          Value: !Sub igw-${AWS::Region}-${AWS::StackName}
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties: 
@@ -102,7 +102,7 @@ Resources:
     Properties: 
       Tags: 
         - Key: Name 
-          Value: !Sub rtb-anto-${AWS::Region}-${AWS::StackName}
+          Value: !Sub rtb-${AWS::Region}-${AWS::StackName}
       VpcId: !Ref Vpc
 
   InternetAccessRoute:
@@ -137,7 +137,7 @@ Resources:
   s3Bucket:
     Type: AWS::S3::Bucket
     Properties: 
-      BucketName: !Sub s3-anto-${AWS::Region}-${AWS::StackName} 
+      BucketName: !Sub s3-${AWS::Region}-${AWS::StackName}
       AccessControl: Private
   IamRole:
     Type: AWS::IAM::Role
@@ -157,7 +157,7 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
-        - PolicyName: !Sub policy-s3-${AWS::Region}-${AWS::StackName}
+        - PolicyName: !Sub policy-${AWS::Region}-${AWS::StackName}-s3
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -192,15 +192,15 @@ Resources:
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ip-${AWS::StackName}
+      InstanceProfileName: !Sub ip-${AWS::Region}-${AWS::StackName}
       Path: /
       Roles:
         - !Ref IamRole
   SnsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: !Sub sns-cf-anto-${AWS::Region}-${Name} 
-      TopicName: !Sub sns-cf-anto--${AWS::Region}-${Name}
+      DisplayName: !Sub sns-${AWS::Region}-${AWS::StackName} 
+      TopicName: !Sub sns-${AWS::Region}-${AWS::StackName}
   SnsTopicPolicy:
     Type: AWS::SNS::TopicPolicy
     Properties:
@@ -226,7 +226,7 @@ Resources:
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: !Sub lt-anto-${AWS::Region}-${AWS::StackName}
+      LaunchTemplateName: !Sub lt-${AWS::Region}-${AWS::StackName}
       LaunchTemplateData:
         CreditSpecification: 
           CpuCredits: standard
@@ -245,24 +245,22 @@ Resources:
             exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             echo BEGIN
             date '+%Y-%m-%d %H:%M:%S'
-            yum install git gcc -y
+            INSTALLATION_PATH="/tmp/installer"
             yum install python3 -y
             pip3 install ansible
             pip3 install botocore boto3
             ansible-galaxy collection install amazon.aws
             ansible-galaxy collection install community.aws
-            aws s3 sync s3://${s3Bucket}/bin /tmp
-            cd /tmp
-            sleep 2m
+            aws s3 sync s3://${s3Bucket}/bin "$INSTALLATION_PATH"
+            cd "$INSTALLATION_PATH"
             export AWS_DEFAULT_REGION=${AWS::Region}
             ansible-playbook playbook.yaml --extra-vars bucketName=${s3Bucket} --extra-vars snsTopicArn=\"${SnsTopic}\"
             echo END
 
-
   Autoscalling:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
-      AutoScalingGroupName: !Sub asg-anto-${AWS::Region}-${AWS::StackName}
+      AutoScalingGroupName: !Sub asg-${AWS::Region}-${AWS::StackName}
       AvailabilityZones: 
         - !Sub ${AWS::Region}a
         - !Sub ${AWS::Region}b
@@ -275,7 +273,7 @@ Resources:
       MixedInstancesPolicy:
         LaunchTemplate:
           LaunchTemplateSpecification:
-            LaunchTemplateName: !Sub lt-anto-${AWS::Region}-${AWS::StackName}
+            LaunchTemplateName: !Sub lt-${AWS::Region}-${AWS::StackName}
             Version: !GetAtt LaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref ServerInstanceType
@@ -284,7 +282,7 @@ Resources:
           SpotAllocationStrategy: capacity-optimized
       Tags: 
         - Key: Name
-          Value: !Sub ec2-anto-${AWS::Region}-${AWS::StackName}
+          Value: !Sub ec2-${AWS::Region}-${AWS::StackName}
           PropagateAtLaunch: True
       TerminationPolicies: 
         - OldestInstance
@@ -292,174 +290,3 @@ Resources:
         - !Ref SubnetA
         - !Ref SubnetB
         - !Ref SubnetC
-
-  CustomLifeCycleHook:
-    Type: AWS::AutoScaling::LifecycleHook
-    Properties: 
-      AutoScalingGroupName: !Ref Autoscalling
-      DefaultResult: CONTINUE
-      LifecycleHookName: my-lifecycle
-      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
-      HeartbeatTimeout: 300
-
-  AutoscallingTerminaisonEvent:
-    Type: AWS::Events::Rule
-    Properties:
-      Description: Detection of Spot Instance Terminaison by ASG
-      EventPattern: {
-      "source": [
-        "aws.autoscaling"
-      ],
-      "detail-type": [
-        "EC2 Instance-terminate Lifecycle Action"
-      ]
-    }
-      Targets:
-        - Id: Lambda 
-          Arn: !GetAtt Lambda.Arn
-        - Id: SNS
-          Arn: !Ref SnsTopic
-
-  SpotInstanceTerminaisonEvent:
-    Type: AWS::Events::Rule
-    Properties: 
-      Description: Detection of Spot Instance Terminaison
-      EventPattern: {
-        "source": 
-          ["aws.ec2"],
-          "detail-type": [
-            "EC2 Spot Instance Interruption Warning"
-            ]
-      }
-      Targets:
-        - Id: Lambda 
-          Arn: !GetAtt Lambda.Arn
-        - Id: SNS
-          Arn: !Ref SnsTopic
-  Lambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub lambda-anto-${AWS::StackName}
-      MemorySize: 128
-      Handler: index.handler
-      Role: !GetAtt LambdaRole.Arn
-      Runtime: python3.7
-      Timeout: 30
-      Environment:
-        Variables:
-          SNS_TOPIC_ARN: !Ref SnsTopic
-      Code:
-        ZipFile: |
-          import os
-          import json 
-          import boto3
-          import uuid
-          import time
-
-          def sendMessageSNSTopic(message):
-            snsTopicArn = os.environ["SNS_TOPIC_ARN"]
-            sns = boto3.client('sns')
-            client.publish(
-              TopicArn=snsTopicArn,
-              Message=message,
-              Subject='Minecraft Server'
-            )
-
-          def runCommandonEC2(instanceId, message):
-            ssm = boto3.client('ssm')
-            response = ssm.send_command(
-              InstanceIds=[instanceId],
-              DocumentName="AWS-RunShellScript",
-              Parameters={'commands': [f'/opt/minecraft/bin/ssm.sh "{message}"']}
-            )
-
-            commandId = response["Command"]["CommandId"]
-
-            status = "InProgress"
-
-            while (status != "InProgress"):
-              status = ssm.get_command_invocation(
-                CommandId=commandId,
-                InstanceId=instanceId
-              )["Status"]
-
-
-            message = "Backup Successfully launched"
-            if status != "Success":
-              message = "Cannot execute backup"
-            
-            sendMessageSNSTopic(message)
-
-            return status != "Success"
-
-          def handleAutoscalling(event):
-            instanceId = event["detail"]["EC2InstanceId"]
-            pass
-          
-          def handleEc2Spot(event):
-            instanceId = event["detail"]["instance-id"]
-            runCommandonEC2(instanceId, "Spot Instance Terminaison")
-
-            # Terminate the instance
-            ec2 = boto3.client('ec2')
-            response = ec2.terminate_instances(
-            InstanceIds=[instanceId]
-            )
-
-          def handler(event, context):
-            print(f"event: {event}, Context:{context}")
-            source = event["source"]
-
-            if source == "aws.ec2":
-              # Handling Spot Instance Terminaison
-              handleEc2Spot(event)
-            else if source == "aws.autoscaling":
-              # Handling Autoscalling Group
-              handleAutoscalling(event)
-            else:
-              print("We have an issue")
-            return true
-
-  LambdaRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      Policies:
-        - PolicyName: root
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: '*'
-                Resource: '*'
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties: 
-      LogGroupName: !Sub /aws/lambda/lambda-anto-${AWS::StackName}
-      RetentionInDays: 1
-
-  PermissionAutoscallingTerminaisonEvent:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt Lambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt AutoscallingTerminaisonEvent.Arn
-
-  PermissionSpotInstanceTerminaison:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt Lambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt SpotInstanceTerminaisonEvent.Arn
-  

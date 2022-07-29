@@ -1,11 +1,11 @@
 ---
-java_version: 1.8.0
+backup: enabled
 minecraft:
   installation_path: "/opt/minecraft"
-  version: 1.16.1
+  version: 1.19.1
   java:
-    xms: 8G
-    xmx: 10G
+    xms: 2G
+    xmx: 3G
   period: 5
   stop_wait_time: 30
-  flavor: modded2
+  flavor: vanilla

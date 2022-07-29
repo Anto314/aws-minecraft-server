@@ -1,6 +1,6 @@
 mc_command() {
         COMMAND=$1
-        echo $COMMAND | mcrcon -p password
+        echo $COMMAND | mcrcon --password "password" 127.0.0.1
 }
 
 mc_say() {

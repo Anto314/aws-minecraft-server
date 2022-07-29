@@ -1,5 +1,5 @@
 installers:
-  vanilla:
+  fabric:
     url: "https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.6.1.51/fabric-installer-0.6.1.51.jar"
     install_cmd: "java -jar {{minecraft.installation_path}}/installer.jar server -mcversion {{minecraft.version}} -downloadMinecraft"
     jar_cmd: "fabric-server-launch.jar nogui"
