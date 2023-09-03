@@ -2,10 +2,11 @@
 backup: enabled
 minecraft:
   installation_path: "/opt/minecraft"
-  version: 1.19.1
+  version: 1.12.1
   java:
     xms: 2G
-    xmx: 3G
+    xmx: 7G
   period: 5
   stop_wait_time: 30
-  flavor: fabric-1.19
+  flavor: modded
+  backup: enabled

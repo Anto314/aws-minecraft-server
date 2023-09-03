@@ -3,15 +3,19 @@
   shell: amazon-linux-extras install epel
   become: yes
 
-- name: Install Packages
-  package:
-    name: "{{item}}"
-  with_items:
-    - java-17-amazon-corretto-devel
-    - tmux
-    - htop
-    - awscli
+# - name: Install Packages
+#   package:
+#     name: "{{item}}"
+#   with_items:
+#     - java-17-amazon-corretto-devel
+#     - tmux
+#     - htop
+#     - awscli
 
+- name: Install Java 8
+  shell: "amazon-linux-extras java-1.8.0-amazon-corretto"
+  become: yes
+  
 - name: Create Folder
   file:
     state: directory
@@ -35,7 +39,6 @@
     - backup.sh
     - ssm.sh
  
-
 - name: Generate Environment File
   template:
     src: minecraft.env.j2
@@ -59,6 +62,14 @@
 
 - name: Sync Game World 
   shell: "aws s3 sync s3://{{bucketName}}/saves {{minecraft.installation_path}}"
+
+- name: Copy Eula File
+  copy:
+    src: "{{item}}"
+    dest: "{{minecraft.installation_path}}/{{item}}"
+  with_items:
+    - eula.txt
+    - server.properties
 
 - name: Start the Service
   systemd:
