@@ -13,7 +13,7 @@
 #     - awscli
 
 - name: Install Java 8
-  shell: "amazon-linux-extras corretto8"
+  shell: "amazon-linux-extras install corretto8"
   become: yes
   
 - name: Create Folder
