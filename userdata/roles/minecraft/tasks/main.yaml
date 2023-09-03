@@ -13,7 +13,7 @@
 #     - awscli
 
 - name: Install Java 8
-  shell: "amazon-linux-extras java-1.8.0-amazon-corretto"
+  shell: "amazon-linux-extras corretto8"
   become: yes
   
 - name: Create Folder
@@ -108,3 +108,4 @@
         msg: "{{lookup('template', 'sns.success.j2')}}"
         subject: Server Minecraft est pret!
         topic: "{{snsTopicArn.split(':')[-1]}}"
+        region: eu-west-1
